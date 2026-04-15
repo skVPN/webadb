@@ -97,6 +97,12 @@ public/
 
 访问 [ac-sold.com/course/](https://ac-sold.com/course/) 查看教程。
 
+## 💬 VibeCoding 对话记录
+
+本项目完全通过 AI 对话（VibeCoding）方式开发。完整的开发对话记录已公开，你可以看到从零开始构建 WebADB 的每一步思考和调试过程：
+
+👉 [查看 VibeCoding 对话记录](https://ac-sold.com/conversation/webadb%20html%20andorid.md)
+
 ## 📬 联系方式
 
 - **Employed at**：Tec-Do
