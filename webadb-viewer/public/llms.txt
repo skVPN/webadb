@@ -1,0 +1,43 @@
+# WebADB Viewer
+
+> 无需安装任何软件，直接在浏览器中通过 WebUSB + ADB 协议连接和控制 Android 设备。
+
+在线使用: https://ac-sold.com
+GitHub: https://github.com/skVPN/webadb
+
+## 功能
+
+- USB 直连 Android 设备（WebUSB API）
+- 实时截屏（单次 + 连续模式）
+- 触摸控制（点击、滑动）
+- ADB Shell 终端
+- RSA 认证（密钥自动生成并持久化）
+- 虚拟按键（Home、Back、Recent、Power、音量）
+
+## 技术架构
+
+纯前端实现，无后端依赖。核心模块：
+
+- adb-protocol.js: ADB 协议消息构建/解析（CNXN/AUTH/OPEN/WRTE/OKAY/CLSE）
+- adb-transport.js: WebUSB 传输层，浏览器直接与 USB 设备通信
+- adb-crypto.js: RSA 密钥生成、PKCS#1 v1.5 Prehashed 签名、Android 自定义公钥格式（524字节结构体）
+- adb-client.js: 高层 API，封装连接、认证、shell、截屏、触控，带操作锁防止并发冲突
+
+## 使用前提
+
+- Android 设备开启 USB 调试
+- Chromium 内核浏览器（Chrome、Edge）
+- HTTPS 环境（WebUSB 要求 Secure Context）
+- 电脑上的 ADB server 需先关闭（adb kill-server）
+
+## 页面
+
+- / — 主工具页面
+- /course/ — 交互式技术教程（ADB 协议、WebUSB、RSA 认证、截屏实战）
+- /about/ — 关于页面、联系方式、隐私政策、免责声明
+- /conversation/webadb%20html%20andorid.md — VibeCoding 开发对话记录
+
+## 联系
+
+公司: 钛动科技
+微信公众号: codgank
