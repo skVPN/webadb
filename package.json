@@ -1,0 +1,12 @@
+{
+  "name": "webadb-viewer",
+  "version": "1.0.0",
+  "description": "基于 WebUSB + ADB 协议的网页端 Android 设备查看器",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

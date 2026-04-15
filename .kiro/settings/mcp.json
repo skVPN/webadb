@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "streamable-mcp-server": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:12306/mcp",
+      "autoApprove": [
+        "get_windows_and_tabs",
+        "chrome_navigate",
+        "chrome_screenshot",
+        "chrome_console",
+        "chrome_inject_script",
+        "chrome_get_web_content"
+      ]
+    }
+  }
+}

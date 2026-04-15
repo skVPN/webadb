@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebADB Viewer - 网页端 Android 设备查看器</title>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2556420619736917"
+     crossorigin="anonymous"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242836;
+      --border: #2e3345;
+      --text: #e4e6ed;
+      --text2: #8b8fa3;
+      --accent: #6c5ce7;
+      --accent2: #a29bfe;
+      --success: #00b894;
+      --danger: #e17055;
+      --warning: #fdcb6e;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* 顶部导航 */
+    .navbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .navbar h1 {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .navbar h1 span { color: var(--accent2); }
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+    }
+    .status-dot.connected { background: var(--success); }
+    .status-text { font-size: 13px; color: var(--text2); }
+
+    /* 按钮 */
+    .btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) { background: #5a4bd1; }
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-danger:hover:not(:disabled) { background: #d35400; }
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { background: var(--border); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* 主布局 */
+    .main {
+      display: flex;
+      height: calc(100vh - 57px);
+    }
+
+    /* 欢迎页 */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      gap: 24px;
+      padding: 40px;
+    }
+    .welcome-icon { font-size: 64px; }
+    .welcome h2 { font-size: 24px; font-weight: 600; }
+    .welcome p { color: var(--text2); text-align: center; max-width: 500px; line-height: 1.6; }
+    .welcome .steps {
+      display: flex;
+      gap: 24px;
+      margin-top: 16px;
+    }
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      width: 200px;
+      text-align: center;
+    }
+    .step-num {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .step h3 { font-size: 14px; margin-bottom: 6px; }
+    .step p { font-size: 12px; color: var(--text2); }
+
+    /* 设备面板 */
+    .workspace { display: none; width: 100%; }
+    .workspace.active { display: flex; }
+
+    /* 左侧 - 屏幕区域 */
+    .screen-panel {
+      flex: 0 0 400px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .screen-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .screen-header h3 { font-size: 14px; font-weight: 500; }
+    .screen-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow: hidden;
+      position: relative;
+    }
+    .screen-container canvas {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+      cursor: crosshair;
+      background: #000;
+    }
+    .screen-placeholder {
+      color: var(--text2);
+      text-align: center;
+    }
+    .screen-placeholder .icon { font-size: 48px; margin-bottom: 12px; }
+    .screen-controls {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .fps-display {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text2);
+    }
+
+    /* 右侧面板 */
+    .right-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* 设备信息 */
+    .info-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+    .info-label { color: var(--text2); }
+    .info-value { font-weight: 500; }
+
+    /* 终端区域 */
+    .terminal-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .terminal-header {
+      padding: 10px 20px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .terminal-header h3 { font-size: 14px; font-weight: 500; }
+    .terminal-output {
+      flex: 1;
+      background: #0d0f14;
+      padding: 16px 20px;
+      overflow-y: auto;
+      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .terminal-output .log-line { margin-bottom: 2px; }
+    .terminal-output .log-system { color: var(--accent2); }
+    .terminal-output .log-error { color: var(--danger); }
+    .terminal-output .log-success { color: var(--success); }
+    .terminal-output .log-cmd { color: var(--warning); }
+    .terminal-input {
+      display: flex;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    .terminal-input .prompt {
+      padding: 10px 12px;
+      color: var(--success);
+      font-family: monospace;
+      font-size: 14px;
+      user-select: none;
+    }
+    .terminal-input input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 14px;
+      padding: 10px 0;
+      outline: none;
+    }
+    .terminal-input input::placeholder { color: var(--text2); }
+
+    /* 不支持 WebUSB 的提示 */
+    .unsupported {
+      display: none;
+      background: var(--danger);
+      color: white;
+      padding: 12px 24px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .unsupported.show { display: block; }
+
+    /* 加载动画 */
+    .loading { display: inline-block; }
+    .loading::after {
+      content: '';
+      animation: dots 1.5s infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    /* 响应式 */
+    @media (max-width: 900px) {
+      .main { flex-direction: column; }
+      .screen-panel { flex: 0 0 auto; max-height: 50vh; border-right: none; border-bottom: 1px solid var(--border); }
+      .welcome .steps { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 不支持提示 -->
+  <div class="unsupported" id="unsupported">
+    当前浏览器不支持 WebUSB API。请使用 Chrome、Edge 等 Chromium 内核浏览器，并确保通过 HTTPS 访问。
+  </div>
+
+  <!-- 导航栏 -->
+  <nav class="navbar">
+    <h1>📱 <span>WebADB</span> Viewer</h1>
+    <div class="nav-status">
+      <a href="/course/" style="color:var(--accent2);font-size:13px;text-decoration:none;margin-right:4px">📚 教学</a>
+      <a href="/about/" style="color:var(--accent2);font-size:13px;text-decoration:none;margin-right:8px">👤 关于</a>
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-text" id="statusText">未连接</span>
+      <button class="btn btn-primary" id="btnConnect" onclick="handleConnect()">🔌 连接设备</button>
+      <button class="btn btn-danger" id="btnDisconnect" onclick="handleDisconnect()" style="display:none">断开</button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <!-- 欢迎页 -->
+    <div class="welcome" id="welcomePage">
+      <div class="welcome-icon">📱</div>
+      <h2>WebADB Viewer</h2>
+      <p>通过 WebUSB 协议直接在浏览器中连接和查看你的 Android 设备，无需安装任何软件。</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>开启 USB 调试</h3>
+          <p>在 Android 设备的开发者选项中开启 USB 调试</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>USB 连接电脑</h3>
+          <p>使用数据线将设备连接到电脑</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>点击连接</h3>
+          <p>点击上方"连接设备"按钮，选择你的设备</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="margin-top: 16px; padding: 12px 32px; font-size: 16px;" onclick="handleConnect()">
+        🔌 连接 Android 设备
+      </button>
+    </div>
+
+    <!-- 工作区 -->
+    <div class="workspace" id="workspace">
+      <!-- 左侧屏幕 -->
+      <div class="screen-panel">
+        <div class="screen-header">
+          <h3>📺 设备屏幕</h3>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="captureOnce()">📸 截屏</button>
+            <button class="btn btn-ghost btn-sm" id="btnStream" onclick="toggleStream()">▶️ 连续</button>
+          </div>
+        </div>
+        <div class="screen-container" id="screenContainer">
+          <div class="screen-placeholder" id="screenPlaceholder">
+            <div class="icon">🖥️</div>
+            <p>点击"截屏"查看设备画面</p>
+          </div>
+          <canvas id="screenCanvas" style="display:none"></canvas>
+        </div>
+        <div class="screen-controls">
+          <button class="btn btn-ghost btn-sm" onclick="sendKey(3)" title="Home">🏠</button>
+          <button class="btn btn-ghost btn-sm" onclick="sendKey(4)" title="Back">◀️</button>
+          <button class="btn btn-ghost btn-sm" onclick="sendKey(187)" title="Recent">📋</button>
+          <button class="btn btn-ghost btn-sm" onclick="sendKey(26)" title="Power">⏻</button>
+          <button class="btn btn-ghost btn-sm" onclick="sendKey(24)" title="Volume Up">🔊</button>
+          <button class="btn btn-ghost btn-sm" onclick="sendKey(25)" title="Volume Down">🔉</button>
+          <span class="fps-display" id="fpsDisplay"></span>
+        </div>
+      </div>
+
+      <!-- 右侧面板 -->
+      <div class="right-panel">
+        <!-- 设备信息 -->
+        <div class="info-bar" id="infoBar">
+          <div class="info-item"><span class="info-label">设备:</span><span class="info-value" id="infoModel">-</span></div>
+          <div class="info-item"><span class="info-label">品牌:</span><span class="info-value" id="infoBrand">-</span></div>
+          <div class="info-item"><span class="info-label">Android:</span><span class="info-value" id="infoVersion">-</span></div>
+          <div class="info-item"><span class="info-label">SDK:</span><span class="info-value" id="infoSdk">-</span></div>
+          <div class="info-item"><span class="info-label">分辨率:</span><span class="info-value" id="infoRes">-</span></div>
+          <div class="info-item"><span class="info-label">电量:</span><span class="info-value" id="infoBattery">-</span></div>
+        </div>
+
+        <!-- 终端 -->
+        <div class="terminal-panel">
+          <div class="terminal-header">
+            <h3>⌨️ ADB Shell</h3>
+            <button class="btn btn-ghost btn-sm" onclick="clearTerminal()">清空</button>
+          </div>
+          <div class="terminal-output" id="terminalOutput"></div>
+          <div class="terminal-input">
+            <span class="prompt">$</span>
+            <input type="text" id="cmdInput" placeholder="输入 shell 命令..." onkeydown="handleCmdKey(event)" disabled>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 页脚：隐私政策与免责声明 -->
+  <div id="siteFooter" style="background:#13151d;border-top:1px solid #2e3345;padding:32px 24px;font-size:12px;color:#6b6f80;line-height:1.8;">
+    <div style="max-width:900px;margin:0 auto;">
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:20px;">
+        <a href="/course/" style="color:#a29bfe;text-decoration:none;">📚 教学说明</a>
+        <a href="/about/" style="color:#a29bfe;text-decoration:none;">👤 关于我们</a>
+        <a href="#privacy" onclick="document.getElementById('privacyModal').style.display='flex'" style="color:#a29bfe;text-decoration:none;">🔒 隐私政策</a>
+        <a href="#disclaimer" onclick="document.getElementById('disclaimerModal').style.display='flex'" style="color:#a29bfe;text-decoration:none;">⚖️ 免责声明</a>
+      </div>
+      <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;margin-bottom:20px;">
+        <div>
+          <p style="color:#a29bfe;font-weight:600;font-size:13px;margin-bottom:8px;">📬 联系我们</p>
+          <p>公司：钛动科技</p>
+          <p>微信公众号：<span style="color:#e4e6ed;font-weight:500;">codgank</span></p>
+        </div>
+        <div style="text-align:center;">
+          <p style="color:#a29bfe;font-weight:600;font-size:13px;margin-bottom:8px;">个人微信</p>
+          <img src="/my-link-qr.png" alt="微信二维码" style="width:100px;height:100px;border-radius:8px;border:1px solid #2e3345;">
+        </div>
+      </div>
+      <p>© 2025 WebADB Viewer · 钛动科技. 本工具基于 WebUSB API 和 ADB 协议开发，所有数据处理均在本地浏览器中完成，不会上传至任何服务器。</p>
+      <p style="margin-top:4px;">本站使用 Google AdSense 展示广告。继续使用本站即表示您同意我们的隐私政策和 Cookie 使用。</p>
+    </div>
+  </div>
+
+  <!-- 隐私政策弹窗 -->
+  <div id="privacyModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.7);align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#1a1d27;border:1px solid #2e3345;border-radius:12px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto;padding:32px;">
+      <h2 style="font-size:20px;margin-bottom:16px;">🔒 隐私政策</h2>
+      <p style="color:#8b8fa3;font-size:14px;line-height:1.8;margin-bottom:12px;"><strong>最后更新：2025年4月</strong></p>
+      <p style="color:#c8cad0;font-size:14px;line-height:1.8;margin-bottom:12px;"><strong>数据收集</strong><br>WebADB Viewer 是一个纯前端工具。您的设备数据（截屏、shell 命令输出等）完全在本地浏览器中处理，不会传输到任何远程服务器。RSA 密钥对存储在浏览器的 localStorage 中，仅用于 ADB 认证。</p>
+      <p style="color:#c8cad0;font-size:14px;line-height:1.8;margin-bottom:12px;"><strong>第三方服务</strong><br>本站使用 Google AdSense 展示广告。Google 可能会使用 Cookie 和类似技术来提供个性化广告。详情请参阅 <a href="https://policies.google.com/privacy" target="_blank" style="color:#a29bfe;">Google 隐私政策</a>。</p>
+      <p style="color:#c8cad0;font-size:14px;line-height:1.8;margin-bottom:12px;"><strong>Cookie</strong><br>本站本身不设置 Cookie。第三方广告服务（Google AdSense）可能会设置 Cookie 用于广告投放和分析。您可以通过浏览器设置管理 Cookie。</p>
+      <p style="color:#c8cad0;font-size:14px;line-height:1.8;margin-bottom:12px;"><strong>联系方式</strong><br>公司：钛动科技<br>微信公众号：codgank<br>如有隐私相关问题，请通过微信公众号或 GitHub 项目页面联系我们。</p>
+      <button onclick="this.closest('[id]').style.display='none'" style="margin-top:12px;padding:8px 20px;background:#6c5ce7;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;">关闭</button>
+    </div>
+  </div>
+
+  <!-- 免责声明弹窗 -->
+  <div id="disclaimerModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.7);align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#1a1d27;border:1px solid #2e3345;border-radius:12px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto;padding:32px;">
+      <h2 style="font-size:20px;margin-bottom:16px;">⚖️ 免责声明</h2>
+      <p style="color:#c8cad0;font-size:14px;line-height:1.8;margin-bottom:12px;"><strong>工具性质</strong><br>WebADB Viewer 是一个开源的开发者工具，仅供学习、调试和开发用途。本工具通过标准的 ADB（Android Debug Bridge）协议与 Android 设备通信。</p>
+      <p style="color:#c8cad0;font-size:14px;line-height:1.8;margin-bottom:12px;"><strong>使用风险</strong><br>使用本工具需要在 Android 设备上开启 USB 调试模式。请确保您了解 USB 调试的安全风险。本工具按"原样"提供，不提供任何明示或暗示的保证。对于因使用本工具而导致的任何直接或间接损失，开发者不承担责任。</p>
+      <p style="color:#c8cad0;font-size:14px;line-height:1.8;margin-bottom:12px;"><strong>合法使用</strong><br>请仅在您拥有合法访问权限的设备上使用本工具。未经授权访问他人设备可能违反法律法规。</p>
+      <p style="color:#c8cad0;font-size:14px;line-height:1.8;margin-bottom:12px;"><strong>第三方内容</strong><br>本站展示的广告由 Google AdSense 提供，广告内容由 Google 管理，与本站无关。本站不对第三方广告内容负责。</p>
+      <button onclick="this.closest('[id]').style.display='none'" style="margin-top:12px;padding:8px 20px;background:#6c5ce7;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;">关闭</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { AdbClient } from './js/adb-client.js';
+
+    const client = new AdbClient();
+    let streaming = false;
+    let streamTimer = null;
+    let lastFrameTime = 0;
+    let screenWidth = 0, screenHeight = 0;
+
+    // 暴露到全局
+    window.adbClient = client;
+    window.handleConnect = handleConnect;
+    window.handleDisconnect = handleDisconnect;
+    window.captureOnce = captureOnce;
+    window.toggleStream = toggleStream;
+    window.sendKey = sendKey;
+    window.handleCmdKey = handleCmdKey;
+    window.clearTerminal = clearTerminal;
+
+    // 检查 WebUSB 支持
+    if (!navigator.usb) {
+      document.getElementById('unsupported').classList.add('show');
+      document.getElementById('btnConnect').disabled = true;
+    }
+
+    // 日志回调
+    client.onLog = (msg) => appendLog(msg, 'system');
+
+    /**
+     * 连接设备
+     */
+    async function handleConnect() {
+      try {
+        document.getElementById('btnConnect').disabled = true;
+        appendLog('正在连接设备...', 'system');
+        
+        await client.connect();
+
+        // 更新 UI 状态
+        document.getElementById('statusDot').classList.add('connected');
+        document.getElementById('statusText').textContent = client.transport.getDeviceName();
+        document.getElementById('btnConnect').style.display = 'none';
+        document.getElementById('btnDisconnect').style.display = '';
+        document.getElementById('welcomePage').style.display = 'none';
+        document.getElementById('workspace').classList.add('active');
+        document.getElementById('cmdInput').disabled = false;
+        document.getElementById('cmdInput').focus();
+
+        appendLog('连接成功，正在获取设备信息...', 'success');
+
+        // 获取设备信息
+        try {
+          const info = await client.getDeviceInfo();
+          document.getElementById('infoModel').textContent = info.model || '-';
+          document.getElementById('infoBrand').textContent = info.brand || '-';
+          document.getElementById('infoVersion').textContent = info.version || '-';
+          document.getElementById('infoSdk').textContent = info.sdk || '-';
+          document.getElementById('infoRes').textContent = info.resolution?.replace('Physical size: ', '') || '-';
+          document.getElementById('infoBattery').textContent = info.battery?.replace(/.*level:\s*/, '') + '%' || '-';
+          appendLog(`设备: ${info.brand} ${info.model} | Android ${info.version} | ${info.resolution?.replace('Physical size: ', '')}`, 'success');
+        } catch (e) {
+          appendLog('获取设备信息失败: ' + e.message, 'error');
+        }
+      } catch (e) {
+        appendLog('❌ 连接失败: ' + e.message, 'error');
+        if (e.message.includes('kill-server') || e.message.includes('超时') || e.message.includes('占用')) {
+          appendLog('💡 提示: 请先在命令行运行 "adb kill-server" 关闭 ADB 服务，然后重试', 'error');
+        }
+        // 尝试清理连接
+        try { await client.disconnect(); } catch (_) {}
+        document.getElementById('btnConnect').disabled = false;
+      }
+    }
+
+    /**
+     * 断开连接
+     */
+    async function handleDisconnect() {
+      stopStream();
+      await client.disconnect();
+
+      document.getElementById('statusDot').classList.remove('connected');
+      document.getElementById('statusText').textContent = '未连接';
+      document.getElementById('btnConnect').style.display = '';
+      document.getElementById('btnConnect').disabled = false;
+      document.getElementById('btnDisconnect').style.display = 'none';
+      document.getElementById('workspace').classList.remove('active');
+      document.getElementById('welcomePage').style.display = '';
+      document.getElementById('cmdInput').disabled = true;
+      document.getElementById('screenCanvas').style.display = 'none';
+      document.getElementById('screenPlaceholder').style.display = '';
+    }
+
+    /**
+     * 单次截屏
+     */
+    async function captureOnce() {
+      try {
+        appendLog('正在截屏...', 'system');
+        const data = await client.screencap();
+        await renderScreen(data);
+        appendLog('截屏完成', 'success');
+      } catch (e) {
+        appendLog('截屏失败: ' + e.message, 'error');
+      }
+    }
+
+    /**
+     * 切换连续截屏模式
+     */
+    function toggleStream() {
+      if (streaming) {
+        stopStream();
+      } else {
+        startStream();
+      }
+    }
+
+    function startStream() {
+      streaming = true;
+      document.getElementById('btnStream').textContent = '⏸️ 暂停';
+      appendLog('开始连续截屏模式', 'system');
+      streamLoop();
+    }
+
+    function stopStream() {
+      streaming = false;
+      document.getElementById('btnStream').textContent = '▶️ 连续';
+      document.getElementById('fpsDisplay').textContent = '';
+      if (streamTimer) {
+        clearTimeout(streamTimer);
+        streamTimer = null;
+      }
+    }
+
+    let streamErrors = 0;
+    async function streamLoop() {
+      if (!streaming || !client.connected) return;
+      try {
+        const start = performance.now();
+        const data = await client.screencap();
+        await renderScreen(data);
+        const elapsed = performance.now() - start;
+        const fps = (1000 / elapsed).toFixed(1);
+        document.getElementById('fpsDisplay').textContent = `${fps} FPS | ${(data.length / 1024).toFixed(0)} KB`;
+        streamErrors = 0; // 成功则重置错误计数
+      } catch (e) {
+        streamErrors++;
+        if (streamErrors >= 3) {
+          appendLog('连续截屏多次失败，已停止: ' + e.message, 'error');
+          stopStream();
+          return;
+        }
+        appendLog('截屏出错: ' + e.message, 'error');
+      }
+      if (streaming) {
+        // 不加额外延迟，截屏本身就需要时间（约500ms-1s）
+        streamTimer = setTimeout(streamLoop, 0);
+      }
+    }
+
+    /**
+     * 渲染截屏到 Canvas
+     */
+    async function renderScreen(pngData) {
+      const blob = new Blob([pngData], { type: 'image/png' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+
+      return new Promise((resolve, reject) => {
+        img.onload = () => {
+          const canvas = document.getElementById('screenCanvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          screenWidth = img.width;
+          screenHeight = img.height;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          canvas.style.display = '';
+          document.getElementById('screenPlaceholder').style.display = 'none';
+          URL.revokeObjectURL(url);
+          resolve();
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('图片解码失败'));
+        };
+        img.src = url;
+      });
+    }
+
+    /**
+     * Canvas 触摸/滑动事件
+     * 支持点击和拖拽滑动
+     */
+    let dragStart = null;
+    let isDragging = false;
+
+    const canvas = document.getElementById('screenCanvas');
+
+    function canvasToDevice(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = screenWidth / rect.width;
+      const scaleY = screenHeight / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (!client.connected) return;
+      dragStart = canvasToDevice(e);
+      isDragging = false;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!dragStart) return;
+      isDragging = true;
+    });
+
+    canvas.addEventListener('mouseup', async (e) => {
+      if (!client.connected || !dragStart) return;
+      const end = canvasToDevice(e);
+      const dx = Math.abs(end.x - dragStart.x);
+      const dy = Math.abs(end.y - dragStart.y);
+
+      try {
+        if (isDragging && (dx > 30 || dy > 30)) {
+          // 滑动操作
+          appendLog(`滑动: (${Math.round(dragStart.x)},${Math.round(dragStart.y)}) → (${Math.round(end.x)},${Math.round(end.y)})`, 'system');
+          await client.swipe(dragStart.x, dragStart.y, end.x, end.y, 300);
+        } else {
+          // 点击操作
+          appendLog(`触摸: (${Math.round(dragStart.x)}, ${Math.round(dragStart.y)})`, 'system');
+          await client.tap(dragStart.x, dragStart.y);
+        }
+        // 操作后自动刷新一帧
+        if (!streaming) {
+          setTimeout(captureOnce, 500);
+        }
+      } catch (e) {
+        appendLog('操作失败: ' + e.message, 'error');
+      }
+
+      dragStart = null;
+      isDragging = false;
+    });
+
+    // 防止拖拽时选中文字
+    canvas.addEventListener('dragstart', (e) => e.preventDefault());
+
+    /**
+     * 发送按键
+     */
+    async function sendKey(keyCode) {
+      if (!client.connected) return;
+      try {
+        await client.keyEvent(keyCode);
+        appendLog(`按键: ${keyCode}`, 'system');
+        if (!streaming) {
+          setTimeout(captureOnce, 300);
+        }
+      } catch (e) {
+        appendLog('按键失败: ' + e.message, 'error');
+      }
+    }
+
+    /**
+     * 处理命令输入
+     */
+    async function handleCmdKey(e) {
+      if (e.key !== 'Enter') return;
+      const input = document.getElementById('cmdInput');
+      const cmd = input.value.trim();
+      if (!cmd) return;
+      input.value = '';
+
+      appendLog('$ ' + cmd, 'cmd');
+
+      try {
+        const result = await client.shellText(cmd);
+        if (result) appendLog(result);
+      } catch (e) {
+        appendLog('命令执行失败: ' + e.message, 'error');
+      }
+    }
+
+    /**
+     * 终端日志
+     */
+    function appendLog(text, type = '') {
+      const output = document.getElementById('terminalOutput');
+      const line = document.createElement('div');
+      line.className = 'log-line' + (type ? ` log-${type}` : '');
+      line.textContent = text;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function clearTerminal() {
+      document.getElementById('terminalOutput').innerHTML = '';
+    }
+  </script>
+</body>
+</html>

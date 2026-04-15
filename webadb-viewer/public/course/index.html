@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebADB 技术教程 — 从浏览器控制 Android 设备的完整指南</title>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2556420619736917" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#faf8f5;--bg-alt:#f3efe9;--text:#2d2a26;--text2:#6b6560;
+  --accent:#e05a33;--accent-light:#fff0eb;--code-bg:#1e1e2e;
+  --code-text:#cdd6f4;--border:#e0dbd4;--shadow:0 2px 12px rgba(45,42,38,.08);
+  --font-body:'Noto Sans SC',sans-serif;--font-code:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:1.8;font-size:16px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* 导航 */
+.nav{position:sticky;top:0;z-index:100;background:rgba(250,248,245,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:12px 0}
+.nav-inner{max-width:900px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-weight:900;font-size:18px;color:var(--accent)}
+.nav-links{display:flex;gap:20px;font-size:14px}
+.nav-links a{color:var(--text2);font-weight:500}
+.nav-links a:hover{color:var(--accent);text-decoration:none}
+
+/* 英雄区 */
+.hero{text-align:center;padding:80px 24px 60px;background:linear-gradient(180deg,var(--accent-light) 0%,var(--bg) 100%)}
+.hero h1{font-size:clamp(28px,5vw,48px);font-weight:900;line-height:1.2;margin-bottom:16px}
+.hero h1 span{color:var(--accent)}
+.hero p{font-size:18px;color:var(--text2);max-width:600px;margin:0 auto 32px}
+.hero-badge{display:inline-block;background:var(--accent);color:#fff;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:500}
+
+/* 模块 */
+.module{max-width:900px;margin:0 auto;padding:60px 24px}
+.module:nth-child(even){background:var(--bg-alt)}
+.module h2{font-size:28px;font-weight:900;margin-bottom:8px;color:var(--text)}
+.module h2 .num{color:var(--accent);font-size:14px;font-weight:700;display:block;margin-bottom:4px;letter-spacing:2px;text-transform:uppercase}
+.module h3{font-size:20px;font-weight:700;margin:32px 0 12px;color:var(--text)}
+.module p{margin-bottom:16px;color:var(--text)}
+
+/* 代码块 */
+.code-block{background:var(--code-bg);color:var(--code-text);border-radius:12px;padding:20px 24px;margin:20px 0;overflow-x:auto;font-family:var(--font-code);font-size:14px;line-height:1.7}
+.code-block .comment{color:#6c7086}
+.code-block .keyword{color:#cba6f7}
+.code-block .string{color:#a6e3a1}
+.code-block .number{color:#fab387}
+.code-block .func{color:#89b4fa}
+
+/* 代码对照 */
+.code-explain{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:20px 0;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.code-explain .code-side{background:var(--code-bg);color:var(--code-text);padding:20px;font-family:var(--font-code);font-size:13px;line-height:2}
+.code-explain .explain-side{background:#fff;padding:20px;font-size:14px;line-height:2;color:var(--text2)}
+.code-explain .explain-side .line{border-left:3px solid var(--accent);padding-left:12px;margin-bottom:8px}
+@media(max-width:700px){.code-explain{grid-template-columns:1fr}}
+
+/* 提示框 */
+.callout{background:#fff;border-left:4px solid var(--accent);border-radius:0 12px 12px 0;padding:20px 24px;margin:24px 0;box-shadow:var(--shadow)}
+.callout .icon{font-size:20px;margin-bottom:8px}
+.callout strong{color:var(--accent)}
+
+/* 流程图 */
+.flow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:24px 0;padding:24px;background:#fff;border-radius:12px;border:1px solid var(--border)}
+.flow-box{background:var(--accent-light);border:2px solid var(--accent);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;text-align:center;min-width:100px}
+.flow-arrow{color:var(--accent);font-size:20px;font-weight:bold}
+
+/* 测验 */
+.quiz{background:#fff;border-radius:12px;padding:24px;margin:24px 0;border:1px solid var(--border)}
+.quiz h4{font-size:16px;font-weight:700;margin-bottom:16px}
+.quiz-option{display:block;padding:10px 16px;margin:6px 0;border:2px solid var(--border);border-radius:8px;cursor:pointer;transition:all .2s;font-size:14px}
+.quiz-option:hover{border-color:var(--accent);background:var(--accent-light)}
+.quiz-option.correct{border-color:#40a02b;background:#e6f4e2}
+.quiz-option.wrong{border-color:#e05a33;background:#fff0eb}
+.quiz-result{margin-top:12px;font-size:14px;font-weight:500;display:none}
+
+/* 架构图 */
+.arch-diagram{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:24px 0}
+.arch-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;transition:transform .2s}
+.arch-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.arch-card .icon{font-size:32px;margin-bottom:8px}
+.arch-card h4{font-size:15px;font-weight:700;margin-bottom:6px}
+.arch-card p{font-size:12px;color:var(--text2)}
+
+/* 术语提示 */
+.term{border-bottom:2px dotted var(--accent);cursor:help;position:relative}
+.term:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--code-bg);color:var(--code-text);padding:8px 12px;border-radius:8px;font-size:12px;white-space:nowrap;z-index:10;margin-bottom:4px}
+
+/* 页脚 */
+.footer{text-align:center;padding:40px 24px;color:var(--text2);font-size:13px;border-top:1px solid var(--border)}
+.footer a{color:var(--accent)}
+
+/* 目录 */
+.toc{max-width:900px;margin:0 auto;padding:0 24px 40px}
+.toc h3{font-size:16px;font-weight:700;margin-bottom:12px;color:var(--text2)}
+.toc-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.toc-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;transition:all .2s}
+.toc-item:hover{border-color:var(--accent);transform:translateX(4px);text-decoration:none}
+.toc-num{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.toc-text{font-size:14px;font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">📱 WebADB Course</div>
+    <div class="nav-links">
+      <a href="/">← 返回工具</a>
+      <a href="#module-1">协议</a>
+      <a href="#module-2">传输</a>
+      <a href="#module-3">认证</a>
+      <a href="#module-4">实战</a>
+      <a href="/about/">关于</a>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <span class="hero-badge">交互式技术教程</span>
+  <h1>从零理解 <span>WebADB</span><br>浏览器如何控制 Android 设备</h1>
+  <p>这个教程会带你深入了解 WebADB Viewer 的每一行代码 — 从 USB 数据包到屏幕截图，从 RSA 密钥到触摸事件。</p>
+</div>
+
+<div class="toc">
+  <h3>📚 课程目录</h3>
+  <div class="toc-list">
+    <a class="toc-item" href="#module-1"><span class="toc-num">1</span><span class="toc-text">ADB 协议：设备间的"暗号"</span></a>
+    <a class="toc-item" href="#module-2"><span class="toc-num">2</span><span class="toc-text">WebUSB 传输：浏览器直连硬件</span></a>
+    <a class="toc-item" href="#module-3"><span class="toc-num">3</span><span class="toc-text">RSA 认证：证明你是谁</span></a>
+    <a class="toc-item" href="#module-4"><span class="toc-num">4</span><span class="toc-text">实战：截屏、触摸与 Shell</span></a>
+  </div>
+</div>
+
+<!-- ═══════════════ 模块 1: ADB 协议 ═══════════════ -->
+<section class="module" id="module-1">
+  <h2><span class="num">模块 01</span>ADB 协议：设备间的"暗号"</h2>
+  <p>想象你和朋友发明了一套暗号来传递消息 — 每条消息都有固定格式：先说暗号类型，再说内容。ADB 协议就是电脑和 Android 手机之间的"暗号系统"。</p>
+
+  <h3>📦 消息结构：每条消息长什么样</h3>
+  <p>ADB 的每条消息都由两部分组成：一个 <strong>24 字节的消息头</strong>（信封）和可选的<strong>数据体</strong>（信件内容）。</p>
+
+  <div class="flow">
+    <div class="flow-box">命令<br><small>4字节</small></div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-box">参数1<br><small>4字节</small></div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-box">参数2<br><small>4字节</small></div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-box">数据长度<br><small>4字节</small></div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-box">校验和<br><small>4字节</small></div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-box">魔数<br><small>4字节</small></div>
+  </div>
+
+  <div class="callout">
+    <div class="icon">💡</div>
+    <strong>魔数是什么？</strong> 就是命令的"反码"（每一位取反）。接收方用它来验证消息没有损坏 — 如果 <code>命令 XOR 魔数 ≠ 0xFFFFFFFF</code>，说明数据传输出了问题。
+  </div>
+
+  <h3>🎭 六种命令：ADB 的全部词汇</h3>
+  <p>ADB 协议只有 6 种命令，就像一门只有 6 个单词的语言：</p>
+
+  <div class="arch-diagram">
+    <div class="arch-card"><div class="icon">🤝</div><h4>CNXN</h4><p>连接握手<br>"你好，我是电脑"</p></div>
+    <div class="arch-card"><div class="icon">🔐</div><h4>AUTH</h4><p>身份认证<br>"证明你是谁"</p></div>
+    <div class="arch-card"><div class="icon">📂</div><h4>OPEN</h4><p>打开通道<br>"我要执行命令"</p></div>
+    <div class="arch-card"><div class="icon">✅</div><h4>OKAY</h4><p>确认收到<br>"收到，继续"</p></div>
+    <div class="arch-card"><div class="icon">📝</div><h4>WRTE</h4><p>写入数据<br>"这是结果数据"</p></div>
+    <div class="arch-card"><div class="icon">🚪</div><h4>CLSE</h4><p>关闭通道<br>"结束了，再见"</p></div>
+  </div>
+
+  <h3>🔍 代码对照：构建一条消息</h3>
+  <div class="code-explain">
+    <div class="code-side">
+<span class="keyword">static</span> <span class="func">buildMessage</span>(command, arg0, arg1, data) {
+  <span class="keyword">const</span> header = <span class="keyword">new</span> ArrayBuffer(<span class="number">24</span>);
+  <span class="keyword">const</span> view = <span class="keyword">new</span> DataView(header);
+
+  view.setUint32(<span class="number">0</span>, command, <span class="keyword">true</span>);
+  view.setUint32(<span class="number">4</span>, arg0, <span class="keyword">true</span>);
+  view.setUint32(<span class="number">8</span>, arg1, <span class="keyword">true</span>);
+  view.setUint32(<span class="number">12</span>, data.length, <span class="keyword">true</span>);
+  view.setUint32(<span class="number">16</span>, checksum(data), <span class="keyword">true</span>);
+  view.setUint32(<span class="number">20</span>, command ^ <span class="number">0xFFFFFFFF</span>, <span class="keyword">true</span>);
+}
+    </div>
+    <div class="explain-side">
+      <div class="line">创建一个 24 字节的空间（信封）</div>
+      <div class="line">DataView 让我们能按字节精确写入数据</div>
+      <div class="line"><code>true</code> 表示小端序 — USB 设备的通用字节顺序</div>
+      <div class="line">前 4 字节放命令类型（如 CNXN）</div>
+      <div class="line">接着放两个参数（用途取决于命令类型）</div>
+      <div class="line">然后是数据长度和校验和</div>
+      <div class="line">最后放魔数（命令的按位取反）用于校验</div>
+    </div>
+  </div>
+
+  <div class="quiz">
+    <h4>🧠 小测验</h4>
+    <p>ADB 消息头的大小是多少字节？</p>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">12 字节</div>
+    <div class="quiz-option" onclick="checkQuiz(this, true)">24 字节</div>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">32 字节</div>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">48 字节</div>
+    <div class="quiz-result"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ 模块 2: WebUSB 传输 ═══════════════ -->
+<section class="module" id="module-2">
+  <h2><span class="num">模块 02</span>WebUSB 传输：浏览器直连硬件</h2>
+  <p>通常只有操作系统驱动程序才能和 USB 设备通信。但 <span class="term" data-tip="一种浏览器 API，允许网页直接与 USB 设备通信">WebUSB</span> 打破了这个限制 — 网页也能直接和 USB 设备"对话"。</p>
+
+  <h3>🔌 USB 设备的"身份证"</h3>
+  <p>每个 USB 设备都有一组标识码。ADB 接口的标识是固定的：</p>
+
+  <div class="code-block">
+<span class="comment">// ADB 接口的 USB 标识码 — 全世界所有 Android 设备都一样</span>
+<span class="keyword">const</span> ADB_CLASS    = <span class="number">0xFF</span>;  <span class="comment">// 厂商自定义类</span>
+<span class="keyword">const</span> ADB_SUBCLASS = <span class="number">0x42</span>;  <span class="comment">// ADB 子类</span>
+<span class="keyword">const</span> ADB_PROTOCOL = <span class="number">0x01</span>;  <span class="comment">// ADB 协议</span>
+  </div>
+
+  <div class="callout">
+    <div class="icon">🔒</div>
+    <strong>安全限制：</strong>WebUSB 要求 HTTPS 环境（或 localhost）。这就是为什么我们需要部署到 Cloudflare Workers 或使用自签名 HTTPS 证书的本地服务器。
+  </div>
+
+  <h3>🔍 连接流程</h3>
+  <div class="flow">
+    <div class="flow-box">requestDevice()<br><small>用户选择设备</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">device.open()<br><small>打开设备</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">查找 ADB 接口<br><small>匹配 FF/42/01</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">claimInterface()<br><small>独占接口</small></div>
+  </div>
+
+  <h3>📡 数据收发：IN 和 OUT 端点</h3>
+  <p>USB 通信通过<span class="term" data-tip="USB 设备上的数据通道，分为 IN（设备→电脑）和 OUT（电脑→设备）">端点（Endpoint）</span>进行。ADB 接口有两个端点：</p>
+
+  <div class="code-explain">
+    <div class="code-side">
+<span class="comment">// 发送数据到设备</span>
+<span class="keyword">await</span> device.<span class="func">transferOut</span>(
+  endpointOut.endpointNumber,
+  message.header
+);
+
+<span class="comment">// 从设备接收数据</span>
+<span class="keyword">const</span> result = <span class="keyword">await</span> device.<span class="func">transferIn</span>(
+  endpointIn.endpointNumber,
+  <span class="number">24</span>  <span class="comment">// 读取 24 字节</span>
+);
+    </div>
+    <div class="explain-side">
+      <div class="line"><strong>transferOut</strong> = 电脑 → 手机</div>
+      <div class="line">把消息头（24字节）发送给设备</div>
+      <div class="line" style="margin-top:24px"><strong>transferIn</strong> = 手机 → 电脑</div>
+      <div class="line">从设备读取数据，指定最大读取字节数</div>
+      <div class="line">返回的 result.data 就是设备发回的数据</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="icon">⚠️</div>
+    <strong>独占性：</strong>USB 接口同一时间只能被一个程序使用。如果电脑上的 <code>adb.exe</code> 正在运行，浏览器就无法连接。必须先运行 <code>adb kill-server</code>。
+  </div>
+
+  <div class="quiz">
+    <h4>🧠 小测验</h4>
+    <p>为什么 WebUSB 需要 HTTPS 环境？</p>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">因为 USB 数据需要加密传输</div>
+    <div class="quiz-option" onclick="checkQuiz(this, true)">因为浏览器要求 Secure Context 才能使用 WebUSB API</div>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">因为 Android 设备只接受 HTTPS 连接</div>
+    <div class="quiz-result"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ 模块 3: RSA 认证 ═══════════════ -->
+<section class="module" id="module-3">
+  <h2><span class="num">模块 03</span>RSA 认证：证明你是谁</h2>
+  <p>当你把手机插到一台新电脑上，手机会弹出"是否允许 USB 调试？"。这背后就是 ADB 的 RSA 认证机制 — 手机需要确认连接的电脑是可信的。</p>
+
+  <h3>🔑 认证三步曲</h3>
+  <div class="flow">
+    <div class="flow-box">📱 手机<br><small>发送随机 Token</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">💻 电脑<br><small>用私钥签名 Token</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">📱 手机<br><small>用公钥验证签名</small></div>
+  </div>
+
+  <p>如果手机已经保存了这台电脑的公钥（用户之前点过"始终允许"），签名验证通过就直接连接。否则手机会弹窗让用户确认。</p>
+
+  <h3>🧮 关键难点：Prehashed 签名</h3>
+  <p>ADB 发送的 Token 是 20 字节 — 恰好是 <span class="term" data-tip="一种哈希算法，输出固定 20 字节（160位）的摘要">SHA-1</span> 摘要的长度。ADB 要求客户端把这 20 字节<strong>直接当作 SHA-1 摘要</strong>来签名，而不是再做一次哈希。</p>
+
+  <div class="callout">
+    <div class="icon">🚨</div>
+    <strong>这是最大的坑！</strong>浏览器的 Web Crypto API 会自动对数据做 SHA-1 哈希再签名（双重哈希），导致签名永远验证失败。解决方案：手动用 BigInt 实现 RSA 运算，跳过自动哈希。
+  </div>
+
+  <div class="code-explain">
+    <div class="code-side">
+<span class="comment">// 构建 PKCS#1 v1.5 签名块</span>
+em[<span class="number">0</span>] = <span class="number">0x00</span>;
+em[<span class="number">1</span>] = <span class="number">0x01</span>;
+<span class="comment">// 填充 0xFF...</span>
+em[padEnd] = <span class="number">0x00</span>;
+<span class="comment">// DigestInfo 前缀（标识 SHA-1）</span>
+em.set(SHA1_PREFIX, offset);
+<span class="comment">// 20 字节 Token（当作摘要）</span>
+em.set(token, offset);
+
+<span class="comment">// RSA 签名 = em^d mod n</span>
+<span class="keyword">const</span> sig = <span class="func">modPow</span>(m, d, n);
+    </div>
+    <div class="explain-side">
+      <div class="line">PKCS#1 v1.5 格式：<code>00 01 FF...FF 00 [前缀] [数据]</code></div>
+      <div class="line"><code>0x01</code> 表示这是签名操作（不是加密）</div>
+      <div class="line">中间用 <code>0xFF</code> 填满，凑够 256 字节</div>
+      <div class="line"><code>0x00</code> 分隔符</div>
+      <div class="line">DigestInfo 告诉验证方"这是 SHA-1 摘要"</div>
+      <div class="line">直接放入 Token，不做任何哈希！</div>
+      <div class="line" style="margin-top:12px">最后用私钥指数 d 做模幂运算</div>
+    </div>
+  </div>
+
+  <h3>📜 Android 公钥格式</h3>
+  <p>Android 不使用标准的 PEM/DER 公钥格式，而是自定义了一个 524 字节的结构体：</p>
+
+  <div class="flow">
+    <div class="flow-box">modulus_size<br><small>4字节 = 64</small></div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-box">n0inv<br><small>4字节 Montgomery参数</small></div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-box">modulus<br><small>256字节 小端序</small></div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-box">rr<br><small>256字节 R²mod n</small></div>
+    <div class="flow-arrow">+</div>
+    <div class="flow-box">exponent<br><small>4字节 = 65537</small></div>
+  </div>
+
+  <p>最终发送给手机的是：<code>base64(结构体) + " webadb@browser\0"</code></p>
+
+  <div class="quiz">
+    <h4>🧠 小测验</h4>
+    <p>为什么不能直接用 Web Crypto API 的 sign() 方法来签名 ADB Token？</p>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">因为 Web Crypto 不支持 RSA</div>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">因为 Token 太短了</div>
+    <div class="quiz-option" onclick="checkQuiz(this, true)">因为 Web Crypto 会自动对数据做 SHA-1 哈希，导致双重哈希</div>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">因为浏览器不允许签名操作</div>
+    <div class="quiz-result"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ 模块 4: 实战 ═══════════════ -->
+<section class="module" id="module-4">
+  <h2><span class="num">模块 04</span>实战：截屏、触摸与 Shell</h2>
+  <p>连接成功后，真正有趣的部分开始了。通过 ADB 流（Stream），我们可以执行 shell 命令、截取屏幕、甚至模拟触摸操作。</p>
+
+  <h3>🌊 ADB 流：多路复用</h3>
+  <p>ADB 在单个 USB 连接上支持多个并发"流"，每个流有自己的 <code>localId</code> 和 <code>remoteId</code>。就像一根电话线上同时进行多个通话。</p>
+
+  <div class="flow">
+    <div class="flow-box">OPEN<br><small>"shell:ls"</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">OKAY<br><small>流已建立</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">WRTE<br><small>返回数据</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">OKAY<br><small>确认收到</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">CLSE<br><small>流结束</small></div>
+  </div>
+
+  <div class="callout">
+    <div class="icon">🔒</div>
+    <strong>操作锁：</strong>虽然 ADB 支持多路复用，但我们的实现使用了操作锁（mutex），确保同一时间只有一个命令在执行。这避免了消息交错导致的数据混乱。
+  </div>
+
+  <h3>📸 截屏的秘密</h3>
+  <p>截屏命令 <code>screencap -p</code> 返回 PNG 格式的图片数据。但有个关键区别：</p>
+
+  <div class="code-explain">
+    <div class="code-side">
+<span class="comment">// ✅ 正确方式：用 exec: 协议</span>
+<span class="keyword">await</span> <span class="func">_execStream</span>(
+  <span class="string">'exec:screencap -p'</span>
+);
+
+<span class="comment">// ❌ 错误方式：用 shell: 协议</span>
+<span class="keyword">await</span> <span class="func">_execStream</span>(
+  <span class="string">'shell:screencap -p'</span>
+);
+    </div>
+    <div class="explain-side">
+      <div class="line"><strong>exec:</strong> 直接执行命令，二进制数据原样传输</div>
+      <div class="line">PNG 图片数据完整无损 ✅</div>
+      <div class="line" style="margin-top:16px"><strong>shell:</strong> 通过 PTY 执行，会把 <code>\n</code> 转成 <code>\r\n</code></div>
+      <div class="line">PNG 数据被破坏，图片无法解码 ❌</div>
+    </div>
+  </div>
+
+  <h3>👆 触摸与滑动</h3>
+  <p>Android 的 <code>input</code> 命令可以模拟各种输入事件：</p>
+
+  <div class="code-block">
+<span class="comment">// 点击屏幕坐标 (500, 800)</span>
+<span class="keyword">await</span> shellText(<span class="string">'input tap 500 800'</span>);
+
+<span class="comment">// 从 (500,800) 滑动到 (500,200)，耗时 300ms</span>
+<span class="keyword">await</span> shellText(<span class="string">'input swipe 500 800 500 200 300'</span>);
+
+<span class="comment">// 按下 Home 键（keycode 3）</span>
+<span class="keyword">await</span> shellText(<span class="string">'input keyevent 3'</span>);
+  </div>
+
+  <p>在网页上，我们监听 Canvas 的鼠标事件，把浏览器坐标转换为设备屏幕坐标：</p>
+
+  <div class="code-block">
+<span class="comment">// 浏览器坐标 → 设备坐标</span>
+<span class="keyword">const</span> scaleX = screenWidth / canvas.getBoundingClientRect().width;
+<span class="keyword">const</span> scaleY = screenHeight / canvas.getBoundingClientRect().height;
+<span class="keyword">const</span> deviceX = (mouseX - canvasLeft) * scaleX;
+<span class="keyword">const</span> deviceY = (mouseY - canvasTop) * scaleY;
+  </div>
+
+  <div class="quiz">
+    <h4>🧠 小测验</h4>
+    <p>为什么截屏要用 <code>exec:</code> 而不是 <code>shell:</code>？</p>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">exec 更快</div>
+    <div class="quiz-option" onclick="checkQuiz(this, true)">shell 会把二进制数据中的 \n 转成 \r\n，破坏 PNG 格式</div>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">exec 支持更大的数据</div>
+    <div class="quiz-option" onclick="checkQuiz(this, false)">shell 不支持 screencap 命令</div>
+    <div class="quiz-result"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ 页脚 ═══════════════ -->
+<div class="footer">
+  <p>WebADB Viewer 技术教程 · 基于 <a href="/">WebADB Viewer</a> 项目源码生成</p>
+  <p style="margin-top:8px">使用 WebUSB + ADB 协议，无需安装任何软件即可在浏览器中控制 Android 设备</p>
+  <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);display:flex;gap:24px;justify-content:center;flex-wrap:wrap">
+    <a href="/">🔌 返回工具</a>
+    <a href="#privacy-section">🔒 隐私政策</a>
+    <a href="#disclaimer-section">⚖️ 免责声明</a>
+  </div>
+</div>
+
+<!-- 隐私政策 -->
+<section id="privacy-section" style="max-width:900px;margin:0 auto;padding:40px 24px;">
+  <h2 style="font-size:24px;font-weight:900;margin-bottom:16px;">🔒 隐私政策</h2>
+  <p style="color:var(--text2);margin-bottom:8px;font-size:14px;"><strong>最后更新：2025年4月</strong></p>
+  <h3 style="font-size:18px;margin:20px 0 8px;">数据收集</h3>
+  <p>WebADB Viewer 是一个纯前端工具。您的设备数据（截屏、shell 命令输出等）完全在本地浏览器中处理，不会传输到任何远程服务器。RSA 密钥对存储在浏览器的 localStorage 中，仅用于 ADB 设备认证。</p>
+  <h3 style="font-size:18px;margin:20px 0 8px;">第三方服务</h3>
+  <p>本站使用 Google AdSense 展示广告。Google 可能会使用 Cookie 和类似技术来提供个性化广告。详情请参阅 <a href="https://policies.google.com/privacy" target="_blank">Google 隐私政策</a>。</p>
+  <h3 style="font-size:18px;margin:20px 0 8px;">Cookie</h3>
+  <p>本站本身不设置 Cookie。第三方广告服务（Google AdSense）可能会设置 Cookie 用于广告投放和分析。您可以通过浏览器设置管理 Cookie 偏好。</p>
+  <h3 style="font-size:18px;margin:20px 0 8px;">联系方式</h3>
+  <p>公司：钛动科技 · 微信公众号：codgank · 如有隐私相关问题，请通过微信公众号或 GitHub 项目页面联系我们。</p>
+</section>
+
+<!-- 免责声明 -->
+<section id="disclaimer-section" style="max-width:900px;margin:0 auto;padding:0 24px 40px;">
+  <h2 style="font-size:24px;font-weight:900;margin-bottom:16px;">⚖️ 免责声明</h2>
+  <h3 style="font-size:18px;margin:20px 0 8px;">工具性质</h3>
+  <p>WebADB Viewer 是一个开源的开发者工具，仅供学习、调试和开发用途。本工具通过标准的 ADB（Android Debug Bridge）协议与 Android 设备通信。</p>
+  <h3 style="font-size:18px;margin:20px 0 8px;">使用风险</h3>
+  <p>使用本工具需要在 Android 设备上开启 USB 调试模式。请确保您了解 USB 调试的安全风险。本工具按"原样"提供，不提供任何明示或暗示的保证。对于因使用本工具而导致的任何直接或间接损失，开发者不承担责任。</p>
+  <h3 style="font-size:18px;margin:20px 0 8px;">合法使用</h3>
+  <p>请仅在您拥有合法访问权限的设备上使用本工具。未经授权访问他人设备可能违反法律法规。</p>
+  <h3 style="font-size:18px;margin:20px 0 8px;">第三方内容</h3>
+  <p>本站展示的广告由 Google AdSense 提供，广告内容由 Google 管理，与本站无关。本站不对第三方广告内容负责。</p>
+</section>
+
+<div style="text-align:center;padding:20px;color:var(--text2);font-size:12px;">
+  <div style="max-width:900px;margin:0 auto;text-align:left;display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;padding:0 24px 20px;">
+    <div>
+      <p style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--accent);">📬 联系我们</p>
+      <p>公司：钛动科技</p>
+      <p>微信公众号：<strong style="color:var(--text);">codgank</strong></p>
+    </div>
+    <div style="text-align:center;">
+      <p style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--accent);">个人微信</p>
+      <img src="/my-link-qr.png" alt="微信二维码" style="width:100px;height:100px;border-radius:8px;border:1px solid var(--border);">
+    </div>
+  </div>
+  <p>© 2025 WebADB Viewer · 钛动科技. All rights reserved.</p>
+</div>
+
+<script>
+function checkQuiz(el, correct) {
+  const quiz = el.closest('.quiz');
+  const options = quiz.querySelectorAll('.quiz-option');
+  const result = quiz.querySelector('.quiz-result');
+  options.forEach(o => {
+    o.style.pointerEvents = 'none';
+    o.classList.remove('correct', 'wrong');
+  });
+  if (correct) {
+    el.classList.add('correct');
+    result.textContent = '✅ 正确！';
+    result.style.color = '#40a02b';
+  } else {
+    el.classList.add('wrong');
+    options.forEach(o => { if (o !== el) o.style.pointerEvents = 'none'; });
+    // 高亮正确答案
+    options.forEach(o => {
+      if (o.getAttribute('onclick')?.includes('true')) o.classList.add('correct');
+    });
+    result.textContent = '❌ 不对，看看正确答案';
+    result.style.color = '#e05a33';
+  }
+  result.style.display = 'block';
+}
+</script>
+</body>
+</html>
