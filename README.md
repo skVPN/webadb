@@ -103,6 +103,23 @@ public/
 
 👉 [查看 VibeCoding 对话记录](https://ac-sold.com/conversation/webadb%20html%20andorid.md)
 
+## 🎮 WebADB vs Android 群控
+
+| 方案 | 原理 | 适用场景 |
+|------|------|----------|
+| **WebADB（本项目）** | WebUSB + ADB 协议，浏览器直连本地 USB 设备 | 单设备调试、快速截屏、Shell 命令、开发测试 |
+| **Android 群控** | 基于 [Genymobile/scrcpy](https://github.com/Genymobile/scrcpy) 的视频流转发 | 多设备批量管理、远程控制、自动化运营 |
+
+WebADB 的优势是**零安装、即开即用**，适合开发者快速调试单台设备。而 Android 群控方案基于 scrcpy 做视频流转发，适合需要同时管理多台设备的场景。
+
+我在 scrcpy 群控的基础上增加了 **AI 日历功能**，可以智能管理多设备的任务调度：
+
+![AI 日历功能](https://ac-sold.com/images/image.png)
+
+![群控面板](https://ac-sold.com/images/fda7d62f-52b2-4029-a39f-65e166527f90.png)
+
+![设备管理](https://ac-sold.com/images/47d6f455-0455-4c34-96f5-5d7e0b7e197f.png)
+
 ## 📬 联系方式
 
 - **Employed at**：Tec-Do
