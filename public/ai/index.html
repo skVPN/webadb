@@ -176,11 +176,25 @@ a{color:var(--accent2);text-decoration:none}
       <label>Webhook URL</label>
       <input id="feishuWebhook" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxx">
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>自动汇报时间</label>
+        <input id="feishuReportTime" type="time" value="18:00">
+      </div>
+      <div class="form-group">
+        <label>自动汇报</label>
+        <select id="feishuAutoReport">
+          <option value="off">关闭</option>
+          <option value="on">开启（每天定时发送）</option>
+        </select>
+      </div>
+    </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" onclick="testFeishu()">🔍 测试发送</button>
       <button class="btn btn-ghost" onclick="saveConfig()">💾 保存配置</button>
     </div>
     <div id="feishuTestResult" style="margin-top:12px;font-size:13px"></div>
+    <div id="feishuTimerInfo" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
   </div>
 </div>
 
@@ -247,12 +261,48 @@ a{color:var(--accent2);text-decoration:none}
 // ═══════════════ 状态管理 ═══════════════
 const STORAGE_KEY = 'webadb_ai_config';
 const CALENDAR_KEY = 'webadb_ai_calendar';
-const LOGS_KEY = 'webadb_ai_logs';
+const LOGS_PREFIX = 'webadb_ai_logs_'; // 按天: webadb_ai_logs_2025-07-15
 
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
-let calendarData = {}; // { "2025-07-15": [{task, time, platform}] }
+let calendarData = {};
 let isExecuting = false;
+let reportTimer = null;
+
+// ═══════════════ 日志（按天存储，保留3天）═══════════════
+function getTodayKey() { return LOGS_PREFIX + new Date().toISOString().split('T')[0]; }
+function getTodayLogs() { return JSON.parse(localStorage.getItem(getTodayKey()) || '[]'); }
+function saveTodayLogs(logs) { localStorage.setItem(getTodayKey(), JSON.stringify(logs)); }
+
+function cleanOldLogs() {
+  const now = new Date();
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(LOGS_PREFIX)) {
+      const diff = (now - new Date(key.replace(LOGS_PREFIX, ''))) / 86400000;
+      if (diff > 3) localStorage.removeItem(key);
+    }
+  }
+}
+
+function addLog(text, cls = 'log-info') {
+  const ts = new Date().toLocaleTimeString();
+  const fullText = `[${ts}] ${text}`;
+  const panel = document.getElementById('logPanel');
+  const div = document.createElement('div');
+  div.className = 'log-line ' + cls;
+  div.textContent = fullText;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
+  const logs = getTodayLogs();
+  logs.push({ text: fullText, type: cls });
+  saveTodayLogs(logs);
+}
+
+function clearLogs() {
+  document.getElementById('logPanel').innerHTML = '';
+  localStorage.removeItem(getTodayKey());
+}
 
 // ═══════════════ 配置管理 ═══════════════
 function loadConfig() {
@@ -264,17 +314,18 @@ function loadConfig() {
   document.getElementById('glmApiKey').value = cfg.glmApiKey || '';
   document.getElementById('glmModel').value = cfg.glmModel || '';
   document.getElementById('feishuWebhook').value = cfg.feishuWebhook || '';
-  // 加载日历数据
+  document.getElementById('feishuReportTime').value = cfg.feishuReportTime || '18:00';
+  document.getElementById('feishuAutoReport').value = cfg.feishuAutoReport || 'off';
   calendarData = JSON.parse(localStorage.getItem(CALENDAR_KEY) || '{}');
-  // 加载日志
-  const logs = JSON.parse(localStorage.getItem(LOGS_KEY) || '[]');
-  const logPanel = document.getElementById('logPanel');
-  logs.forEach(l => {
+  cleanOldLogs();
+  // 加载今日日志到 UI
+  getTodayLogs().forEach(l => {
     const div = document.createElement('div');
     div.className = 'log-line ' + (l.type || '');
     div.textContent = l.text;
-    logPanel.appendChild(div);
+    document.getElementById('logPanel').appendChild(div);
   });
+  setupReportTimer();
 }
 
 function saveConfig() {
@@ -286,13 +337,40 @@ function saveConfig() {
     glmApiKey: document.getElementById('glmApiKey').value.trim(),
     glmModel: document.getElementById('glmModel').value.trim(),
     feishuWebhook: document.getElementById('feishuWebhook').value.trim(),
+    feishuReportTime: document.getElementById('feishuReportTime').value,
+    feishuAutoReport: document.getElementById('feishuAutoReport').value,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
   addLog('配置已保存', 'log-ok');
+  setupReportTimer();
 }
 
 function getConfig() {
   return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+}
+
+// ═══════════════ 飞书定时汇报 ═══════════════
+function setupReportTimer() {
+  if (reportTimer) { clearInterval(reportTimer); reportTimer = null; }
+  const cfg = getConfig();
+  const infoEl = document.getElementById('feishuTimerInfo');
+  if (cfg.feishuAutoReport !== 'on' || !cfg.feishuWebhook || !cfg.feishuReportTime) {
+    if (infoEl) infoEl.textContent = '自动汇报：已关闭';
+    return;
+  }
+  if (infoEl) infoEl.textContent = `⏰ 自动汇报：每天 ${cfg.feishuReportTime} 发送`;
+  let lastSentDate = localStorage.getItem('webadb_last_report_date') || '';
+  reportTimer = setInterval(async () => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const currentTime = now.toTimeString().slice(0, 5);
+    if (currentTime === cfg.feishuReportTime && lastSentDate !== todayStr) {
+      lastSentDate = todayStr;
+      localStorage.setItem('webadb_last_report_date', todayStr);
+      addLog('⏰ 定时汇报触发', 'log-info');
+      try { await sendDailyReport(); } catch (e) { addLog('定时汇报失败: ' + e.message, 'log-err'); }
+    }
+  }, 60000);
 }
 
 // ═══════════════ LLM API 调用 ═══════════════
@@ -615,14 +693,13 @@ async function sendDailyReport() {
   addLog('正在生成日报...', 'log-info');
   try {
     // 收集今日日志
-    const logs = JSON.parse(localStorage.getItem(LOGS_KEY) || '[]');
+    const todayLogs = getTodayLogs().map(l => l.text).join('\n');
     const today = new Date().toISOString().split('T')[0];
-    const todayLogs = logs.filter(l => l.text.includes(today) || logs.indexOf(l) > logs.length - 50).map(l => l.text).join('\n');
 
     // 用 LLM 生成日报
     const report = await callLLM([
       { role: 'system', content: '你是营销日报助手，根据执行日志生成简洁的日报摘要。' },
-      { role: 'user', content: `请根据以下执行日志生成今日营销日报:\n\n${todayLogs}\n\n格式：\n📊 今日营销日报\n日期：${today}\n\n执行概况：...\n完成任务：...\n问题与建议：...` }
+      { role: 'user', content: `请根据以下执行日志生成今日营销日报:\n\n${todayLogs || '今日暂无执行记录'}\n\n格式：\n📊 今日营销日报\n日期：${today}\n\n执行概况：...\n完成任务：...\n问题与建议：...` }
     ]);
 
     // 发送到飞书
@@ -644,27 +721,6 @@ function switchTab(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   event.target.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
-}
-
-function addLog(text, cls = 'log-info') {
-  const ts = new Date().toLocaleTimeString();
-  const fullText = `[${ts}] ${text}`;
-  const panel = document.getElementById('logPanel');
-  const div = document.createElement('div');
-  div.className = 'log-line ' + cls;
-  div.textContent = fullText;
-  panel.appendChild(div);
-  panel.scrollTop = panel.scrollHeight;
-  // 持久化
-  const logs = JSON.parse(localStorage.getItem(LOGS_KEY) || '[]');
-  logs.push({ text: fullText, type: cls });
-  if (logs.length > 500) logs.splice(0, logs.length - 500);
-  localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
-}
-
-function clearLogs() {
-  document.getElementById('logPanel').innerHTML = '';
-  localStorage.removeItem(LOGS_KEY);
 }
 
 function arrayBufferToBase64(bytes) {
