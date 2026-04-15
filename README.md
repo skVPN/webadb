@@ -99,7 +99,7 @@ public/
 
 ## 📬 联系方式
 
-- **公司**：钛动科技
+- **Employed at**：Tec-Do
 - **微信公众号**：codgank
 - **GitHub**：[github.com/skVPN/webadb](https://github.com/skVPN/webadb)
 
