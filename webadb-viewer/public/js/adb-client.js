@@ -81,13 +81,20 @@ export class AdbClient {
 
     this.log('步骤3: 等待设备响应...');
     let triedSignature = false;
+    let sentPublicKey = false;
 
     for (let attempt = 0; attempt < 30; attempt++) {
       let msg;
       try {
-        msg = await this.transport.receive(30000);
+        // 发送公钥后等待更久（用户需要在手机上操作）
+        const timeout = sentPublicKey ? 60000 : 30000;
+        msg = await this.transport.receive(timeout);
       } catch (e) {
-        this.log('❌ 接收消息失败: ' + e.message);
+        if (sentPublicKey) {
+          this.log('❌ 等待授权超时，请在手机上点击"允许 USB 调试"后重新连接');
+        } else {
+          this.log('❌ 接收消息失败: ' + e.message);
+        }
         throw e;
       }
 
@@ -124,7 +131,8 @@ export class AdbClient {
             const pubKey = await this.keyStore.getPublicKeyPayload();
             this.log(`公钥 payload: ${pubKey.length} 字节`);
             await this.transport.send(AdbProtocol.authPublicKey(pubKey));
-            this.log('公钥已发送，请在手机上点击"允许 USB 调试"');
+            sentPublicKey = true;
+            this.log('公钥已发送，请在手机上点击"允许 USB 调试"（勾选"始终允许"）');
           } catch (e) {
             this.log('❌ 发送公钥失败: ' + e.message);
             throw e;

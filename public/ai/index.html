@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 营销日历 - WebADB Viewer</title>
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#242836;--border:#2e3345;--text:#e4e6ed;--text2:#8b8fa3;--accent:#6c5ce7;--accent2:#a29bfe;--success:#00b894;--danger:#e17055;--warning:#fdcb6e}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--accent2);text-decoration:none}
+
+/* 导航 */
+.navbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.navbar h1{font-size:18px;font-weight:600}
+.navbar h1 span{color:var(--accent2)}
+.nav-links{display:flex;gap:16px;font-size:13px}
+.nav-links a{color:var(--text2)}
+
+/* 标签页 */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px}
+.tab{padding:12px 20px;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent)}
+.tab:hover{color:var(--text)}
+
+/* 面板 */
+.panel{display:none;max-width:1200px;margin:0 auto;padding:24px}
+.panel.active{display:block}
+
+/* 卡片 */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px}
+.card h3{font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* 表单 */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;font-family:inherit}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--accent)}
+.form-group textarea{resize:vertical;min-height:80px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* 按钮 */
+.btn{padding:8px 20px;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#5a4bd1}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--border)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* 状态指示 */
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:500}
+.status-badge.ok{background:#00b89422;color:var(--success)}
+.status-badge.fail{background:#e1705522;color:var(--danger)}
+.status-badge.pending{background:#fdcb6e22;color:var(--warning)}
+
+/* 日历 */
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:16px}
+.cal-header{text-align:center;font-size:12px;color:var(--text2);padding:8px 0;font-weight:600}
+.cal-day{background:var(--surface2);border:1px solid var(--border);border-radius:8px;min-height:80px;padding:6px;font-size:12px;cursor:pointer;transition:all .2s}
+.cal-day:hover{border-color:var(--accent)}
+.cal-day.today{border-color:var(--accent);background:#6c5ce711}
+.cal-day.has-task{border-color:var(--success)}
+.cal-day .day-num{font-weight:600;margin-bottom:4px}
+.cal-day .task-dot{width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block;margin-right:2px}
+.cal-day .task-text{color:var(--text2);font-size:11px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.cal-empty{min-height:80px}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-nav h3{font-size:18px;font-weight:700}
+
+/* 对话框 */
+.chat-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-top:16px;overflow:hidden}
+.chat-messages{height:300px;overflow-y:auto;padding:16px;font-size:14px;line-height:1.6}
+.chat-msg{margin-bottom:12px;max-width:80%}
+.chat-msg.user{margin-left:auto;text-align:right}
+.chat-msg .bubble{display:inline-block;padding:8px 14px;border-radius:12px;text-align:left}
+.chat-msg.user .bubble{background:var(--accent);color:#fff}
+.chat-msg.ai .bubble{background:var(--surface);border:1px solid var(--border)}
+.chat-input{display:flex;border-top:1px solid var(--border)}
+.chat-input input{flex:1;padding:12px 16px;background:transparent;border:none;color:var(--text);font-size:14px;outline:none}
+.chat-input button{padding:12px 20px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:14px}
+
+/* 日志 */
+.log-panel{background:#0d0f14;border-radius:8px;padding:12px;max-height:400px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6}
+.log-line{margin-bottom:2px}
+.log-info{color:var(--accent2)}
+.log-ok{color:var(--success)}
+.log-err{color:var(--danger)}
+.log-warn{color:var(--warning)}
+
+/* 执行状态 */
+.exec-status{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.exec-stat{background:var(--surface2);border-radius:10px;padding:12px 16px;flex:1;min-width:120px}
+.exec-stat .label{font-size:11px;color:var(--text2)}
+.exec-stat .value{font-size:20px;font-weight:700;margin-top:4px}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <h1>🤖 <span>AI</span> 营销日历</h1>
+  <div class="nav-links">
+    <a href="/">🔌 设备控制</a>
+    <a href="/course/">📚 教学</a>
+    <a href="/about/">👤 关于</a>
+  </div>
+</nav>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('config')">⚙️ 模型配置</div>
+  <div class="tab" onclick="switchTab('calendar')">📅 营销日历</div>
+  <div class="tab" onclick="switchTab('exec')">🚀 执行控制</div>
+  <div class="tab" onclick="switchTab('logs')">📋 日志</div>
+</div>
+
+<!-- ═══ 配置面板 ═══ -->
+<div class="panel active" id="panel-config">
+  <!-- 生成模型 -->
+  <div class="card">
+    <h3>🧠 日历生成模型（LLM）<span class="status-badge pending" id="llmStatus">未测试</span></h3>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">用于根据提示词生成营销日历内容，支持 OpenAI 兼容 API（如 DeepSeek、GLM 等）</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>API Base URL</label>
+        <input id="llmBaseUrl" placeholder="https://api.deepseek.com/v1" value="">
+      </div>
+      <div class="form-group">
+        <label>API Key</label>
+        <input id="llmApiKey" type="password" placeholder="sk-...">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>模型名称</label>
+      <input id="llmModel" placeholder="deepseek-chat" value="">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="testLLM()">🔍 测试连接</button>
+      <button class="btn btn-ghost" onclick="saveConfig()">💾 保存配置</button>
+    </div>
+    <div id="llmTestResult" style="margin-top:12px;font-size:13px"></div>
+  </div>
+
+  <!-- 控制模型 -->
+  <div class="card">
+    <h3>📱 手机控制模型（AutoGLM）<span class="status-badge pending" id="glmStatus">未测试</span></h3>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">AutoGLM-Phone 视觉语言模型，接收截屏图片+指令，返回操作动作</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label>API Base URL</label>
+        <input id="glmBaseUrl" placeholder="https://api-inference.modelscope.cn/v1" value="">
+      </div>
+      <div class="form-group">
+        <label>API Key</label>
+        <input id="glmApiKey" type="password" placeholder="your-api-key">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>模型名称</label>
+      <input id="glmModel" placeholder="ZAI/AutoGLM-Phone-9B" value="">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="testGLM()">🔍 测试连接</button>
+      <button class="btn btn-ghost" onclick="saveConfig()">💾 保存配置</button>
+    </div>
+    <div id="glmTestResult" style="margin-top:12px;font-size:13px"></div>
+  </div>
+
+  <!-- 飞书机器人 -->
+  <div class="card">
+    <h3>🔔 飞书机器人通知 <span class="status-badge pending" id="feishuStatus">未测试</span></h3>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">每日执行完成后，LLM 自动生成日报并发送到飞书群</p>
+    <div class="form-group">
+      <label>Webhook URL</label>
+      <input id="feishuWebhook" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxx">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="testFeishu()">🔍 测试发送</button>
+      <button class="btn btn-ghost" onclick="saveConfig()">💾 保存配置</button>
+    </div>
+    <div id="feishuTestResult" style="margin-top:12px;font-size:13px"></div>
+  </div>
+</div>
+
+<!-- ═══ 日历面板 ═══ -->
+<div class="panel" id="panel-calendar">
+  <div class="card">
+    <h3>💬 AI 对话生成营销日历</h3>
+    <div class="chat-box">
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg ai"><div class="bubble">你好！我是营销日历助手。告诉我你的产品、目标平台和营销周期，我来帮你生成营销日历。<br><br>例如："帮我生成一个7月份的小红书营销日历，产品是蓝牙耳机，每周发布3次"</div></div>
+      </div>
+      <div class="chat-input">
+        <input id="chatInput" placeholder="描述你的营销需求..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button onclick="sendChat()">发送</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cal-nav">
+      <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">◀ 上月</button>
+      <h3 id="calTitle">2025年7月</h3>
+      <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">下月 ▶</button>
+    </div>
+    <div class="calendar" id="calendarGrid"></div>
+  </div>
+</div>
+
+<!-- ═══ 执行面板 ═══ -->
+<div class="panel" id="panel-exec">
+  <div class="card">
+    <h3>🚀 执行控制</h3>
+    <div class="exec-status">
+      <div class="exec-stat"><div class="label">今日任务</div><div class="value" id="execTotal">0</div></div>
+      <div class="exec-stat"><div class="label">已完成</div><div class="value" id="execDone" style="color:var(--success)">0</div></div>
+      <div class="exec-stat"><div class="label">失败</div><div class="value" id="execFail" style="color:var(--danger)">0</div></div>
+      <div class="exec-stat"><div class="label">状态</div><div class="value" id="execState">待命</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-success" id="btnStart" onclick="startExecution()">▶️ 开始执行今日任务</button>
+      <button class="btn btn-danger" id="btnStop" onclick="stopExecution()" disabled>⏹ 停止</button>
+      <button class="btn btn-ghost" onclick="sendDailyReport()">📊 发送日报</button>
+    </div>
+    <p style="color:var(--text2);font-size:13px">执行流程：截屏 → AutoGLM 分析 → ADB 操作 → 循环直到任务完成</p>
+  </div>
+
+  <div class="card">
+    <h3>📋 今日任务列表</h3>
+    <div id="todayTasks" style="font-size:14px;color:var(--text2)">暂无任务，请先在日历中生成营销计划</div>
+  </div>
+</div>
+
+<!-- ═══ 日志面板 ═══ -->
+<div class="panel" id="panel-logs">
+  <div class="card">
+    <h3>📋 执行日志 <button class="btn btn-ghost btn-sm" onclick="clearLogs()" style="margin-left:auto">清空</button></h3>
+    <div class="log-panel" id="logPanel">
+      <div class="log-line log-info">[系统] AI 营销日历已就绪</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════ 状态管理 ═══════════════
+const STORAGE_KEY = 'webadb_ai_config';
+const CALENDAR_KEY = 'webadb_ai_calendar';
+const LOGS_KEY = 'webadb_ai_logs';
+
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let calendarData = {}; // { "2025-07-15": [{task, time, platform}] }
+let isExecuting = false;
+
+// ═══════════════ 配置管理 ═══════════════
+function loadConfig() {
+  const cfg = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  document.getElementById('llmBaseUrl').value = cfg.llmBaseUrl || '';
+  document.getElementById('llmApiKey').value = cfg.llmApiKey || '';
+  document.getElementById('llmModel').value = cfg.llmModel || '';
+  document.getElementById('glmBaseUrl').value = cfg.glmBaseUrl || '';
+  document.getElementById('glmApiKey').value = cfg.glmApiKey || '';
+  document.getElementById('glmModel').value = cfg.glmModel || '';
+  document.getElementById('feishuWebhook').value = cfg.feishuWebhook || '';
+  // 加载日历数据
+  calendarData = JSON.parse(localStorage.getItem(CALENDAR_KEY) || '{}');
+  // 加载日志
+  const logs = JSON.parse(localStorage.getItem(LOGS_KEY) || '[]');
+  const logPanel = document.getElementById('logPanel');
+  logs.forEach(l => {
+    const div = document.createElement('div');
+    div.className = 'log-line ' + (l.type || '');
+    div.textContent = l.text;
+    logPanel.appendChild(div);
+  });
+}
+
+function saveConfig() {
+  const cfg = {
+    llmBaseUrl: document.getElementById('llmBaseUrl').value.trim(),
+    llmApiKey: document.getElementById('llmApiKey').value.trim(),
+    llmModel: document.getElementById('llmModel').value.trim(),
+    glmBaseUrl: document.getElementById('glmBaseUrl').value.trim(),
+    glmApiKey: document.getElementById('glmApiKey').value.trim(),
+    glmModel: document.getElementById('glmModel').value.trim(),
+    feishuWebhook: document.getElementById('feishuWebhook').value.trim(),
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+  addLog('配置已保存', 'log-ok');
+}
+
+function getConfig() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+}
+
+// ═══════════════ LLM API 调用 ═══════════════
+async function callLLM(messages, stream = false) {
+  const cfg = getConfig();
+  if (!cfg.llmBaseUrl || !cfg.llmApiKey || !cfg.llmModel) {
+    throw new Error('请先配置 LLM 模型');
+  }
+  const url = cfg.llmBaseUrl.replace(/\/$/, '') + '/chat/completions';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.llmApiKey },
+    body: JSON.stringify({ model: cfg.llmModel, messages, temperature: 0.7, stream: false })
+  });
+  if (!res.ok) throw new Error(`LLM API 错误: ${res.status} ${await res.text()}`);
+  const data = await res.json();
+  return data.choices[0].message.content;
+}
+
+// ═══════════════ 测试连接 ═══════════════
+async function testLLM() {
+  const el = document.getElementById('llmTestResult');
+  const badge = document.getElementById('llmStatus');
+  el.innerHTML = '<span style="color:var(--warning)">测试中...</span>';
+  try {
+    saveConfig();
+    const reply = await callLLM([{ role: 'user', content: '回复"OK"两个字母即可' }]);
+    el.innerHTML = `<span style="color:var(--success)">✅ 连接成功: "${reply.slice(0, 50)}"</span>`;
+    badge.className = 'status-badge ok'; badge.textContent = '可用';
+  } catch (e) {
+    el.innerHTML = `<span style="color:var(--danger)">❌ ${e.message}</span>`;
+    badge.className = 'status-badge fail'; badge.textContent = '不可用';
+  }
+}
+
+async function testGLM() {
+  const el = document.getElementById('glmTestResult');
+  const badge = document.getElementById('glmStatus');
+  el.innerHTML = '<span style="color:var(--warning)">测试中...</span>';
+  try {
+    saveConfig();
+    const cfg = getConfig();
+    const url = cfg.glmBaseUrl.replace(/\/$/, '') + '/chat/completions';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.glmApiKey },
+      body: JSON.stringify({ model: cfg.glmModel, messages: [{ role: 'user', content: [{ type: 'text', text: '回复OK' }] }], temperature: 0.1 })
+    });
+    if (!res.ok) throw new Error(`API 错误: ${res.status}`);
+    const data = await res.json();
+    el.innerHTML = `<span style="color:var(--success)">✅ 连接成功: "${data.choices[0].message.content.slice(0, 50)}"</span>`;
+    badge.className = 'status-badge ok'; badge.textContent = '可用';
+  } catch (e) {
+    el.innerHTML = `<span style="color:var(--danger)">❌ ${e.message}</span>`;
+    badge.className = 'status-badge fail'; badge.textContent = '不可用';
+  }
+}
+
+async function testFeishu() {
+  const el = document.getElementById('feishuTestResult');
+  const badge = document.getElementById('feishuStatus');
+  el.innerHTML = '<span style="color:var(--warning)">发送中...</span>';
+  try {
+    saveConfig();
+    const cfg = getConfig();
+    if (!cfg.feishuWebhook) throw new Error('请填写 Webhook URL');
+    const res = await fetch(cfg.feishuWebhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ msg_type: 'text', content: { text: '🤖 WebADB AI 营销日历测试消息 - ' + new Date().toLocaleString() } })
+    });
+    if (!res.ok) throw new Error(`发送失败: ${res.status}`);
+    el.innerHTML = `<span style="color:var(--success)">✅ 发送成功</span>`;
+    badge.className = 'status-badge ok'; badge.textContent = '可用';
+  } catch (e) {
+    el.innerHTML = `<span style="color:var(--danger)">❌ ${e.message}</span>`;
+    badge.className = 'status-badge fail'; badge.textContent = '不可用';
+  }
+}
+
+// ═══════════════ 日历 ═══════════════
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  const title = document.getElementById('calTitle');
+  title.textContent = `${currentYear}年${currentMonth + 1}月`;
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const today = new Date();
+
+  let html = ['日','一','二','三','四','五','六'].map(d => `<div class="cal-header">${d}</div>`).join('');
+
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-empty"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const tasks = calendarData[dateStr] || [];
+    const isToday = today.getFullYear() === currentYear && today.getMonth() === currentMonth && today.getDate() === d;
+    const cls = ['cal-day', isToday ? 'today' : '', tasks.length ? 'has-task' : ''].filter(Boolean).join(' ');
+
+    html += `<div class="${cls}" onclick="showDayDetail('${dateStr}')">
+      <div class="day-num">${d}</div>
+      ${tasks.length ? tasks.map(t => `<div><span class="task-dot"></span><span class="task-text">${t.task}</span></div>`).join('') : ''}
+    </div>`;
+  }
+  grid.innerHTML = html;
+  updateTodayTasks();
+}
+
+function changeMonth(delta) {
+  currentMonth += delta;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderCalendar();
+}
+
+function showDayDetail(dateStr) {
+  const tasks = calendarData[dateStr] || [];
+  if (!tasks.length) { alert(`${dateStr} 暂无任务`); return; }
+  alert(`${dateStr} 的任务:\n\n` + tasks.map((t, i) => `${i+1}. [${t.time || '全天'}] ${t.task} (${t.platform || ''})`).join('\n'));
+}
+
+function updateTodayTasks() {
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const tasks = calendarData[dateStr] || [];
+  const el = document.getElementById('todayTasks');
+  document.getElementById('execTotal').textContent = tasks.length;
+  if (!tasks.length) { el.innerHTML = '暂无任务'; return; }
+  el.innerHTML = tasks.map((t, i) => `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
+    <span>${i+1}. ${t.task}</span>
+    <span class="status-badge ${t.done ? 'ok' : 'pending'}">${t.done ? '已完成' : '待执行'}</span>
+  </div>`).join('');
+}
+
+// ═══════════════ AI 对话生成日历 ═══════════════
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  appendChat(msg, 'user');
+  appendChat('正在生成营销日历...', 'ai');
+
+  try {
+    const prompt = `你是一个营销日历生成助手。用户需求如下：
+"${msg}"
+
+请生成一个营销日历，以 JSON 格式返回，格式如下：
+{
+  "tasks": [
+    {"date": "2025-07-15", "time": "10:00", "platform": "小红书", "task": "发布蓝牙耳机测评笔记"},
+    {"date": "2025-07-16", "time": "14:00", "platform": "抖音", "task": "浏览竞品视频并点赞评论"}
+  ]
+}
+
+当前日期: ${new Date().toISOString().split('T')[0]}
+只返回 JSON，不要其他文字。`;
+
+    const reply = await callLLM([{ role: 'system', content: '你是营销日历生成助手，只返回 JSON 格式数据。' }, { role: 'user', content: prompt }]);
+
+    // 解析 JSON
+    const jsonMatch = reply.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('AI 返回格式错误');
+    const data = JSON.parse(jsonMatch[0]);
+
+    // 写入日历
+    if (data.tasks && Array.isArray(data.tasks)) {
+      data.tasks.forEach(t => {
+        if (!calendarData[t.date]) calendarData[t.date] = [];
+        calendarData[t.date].push({ task: t.task, time: t.time, platform: t.platform, done: false });
+      });
+      localStorage.setItem(CALENDAR_KEY, JSON.stringify(calendarData));
+      renderCalendar();
+
+      // 移除"正在生成"消息
+      const msgs = document.getElementById('chatMessages');
+      msgs.removeChild(msgs.lastChild);
+      appendChat(`✅ 已生成 ${data.tasks.length} 条营销任务！切换到"📅 营销日历"标签查看。`, 'ai');
+      addLog(`AI 生成了 ${data.tasks.length} 条营销任务`, 'log-ok');
+    }
+  } catch (e) {
+    const msgs = document.getElementById('chatMessages');
+    msgs.removeChild(msgs.lastChild);
+    appendChat('❌ 生成失败: ' + e.message, 'ai');
+    addLog('日历生成失败: ' + e.message, 'log-err');
+  }
+}
+
+function appendChat(text, role) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  div.innerHTML = `<div class="bubble">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ═══════════════ 执行引擎 ═══════════════
+async function startExecution() {
+  if (isExecuting) return;
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const tasks = calendarData[dateStr] || [];
+  if (!tasks.length) { alert('今日无任务'); return; }
+
+  isExecuting = true;
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnStop').disabled = false;
+  document.getElementById('execState').textContent = '执行中';
+  document.getElementById('execDone').textContent = '0';
+  document.getElementById('execFail').textContent = '0';
+
+  let done = 0, fail = 0;
+
+  for (let i = 0; i < tasks.length; i++) {
+    if (!isExecuting) break;
+    const task = tasks[i];
+    addLog(`[任务 ${i+1}/${tasks.length}] 开始: ${task.task}`, 'log-info');
+
+    try {
+      // 执行循环：截屏 → AutoGLM 分析 → ADB 操作
+      await executeTask(task);
+      task.done = true;
+      done++;
+      document.getElementById('execDone').textContent = done;
+      addLog(`[任务 ${i+1}] ✅ 完成`, 'log-ok');
+    } catch (e) {
+      fail++;
+      document.getElementById('execFail').textContent = fail;
+      addLog(`[任务 ${i+1}] ❌ 失败: ${e.message}`, 'log-err');
+    }
+  }
+
+  localStorage.setItem(CALENDAR_KEY, JSON.stringify(calendarData));
+  updateTodayTasks();
+  isExecuting = false;
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStop').disabled = true;
+  document.getElementById('execState').textContent = done === tasks.length ? '全部完成' : '已停止';
+  addLog(`执行结束: ${done} 成功, ${fail} 失败`, done === tasks.length ? 'log-ok' : 'log-warn');
+}
+
+async function executeTask(task) {
+  const cfg = getConfig();
+  if (!cfg.glmBaseUrl || !cfg.glmApiKey) throw new Error('AutoGLM 未配置');
+
+  // 需要 WebADB 连接
+  if (!window.opener?.adbClient?.connected && !window.adbClient?.connected) {
+    throw new Error('请先在主页面连接 Android 设备');
+  }
+  const adb = window.opener?.adbClient || window.adbClient;
+
+  const maxSteps = 20;
+  for (let step = 0; step < maxSteps; step++) {
+    if (!isExecuting) throw new Error('用户停止');
+
+    // 1. 截屏
+    addLog(`  步骤 ${step+1}: 截屏...`, 'log-info');
+    const screenshot = await adb.screencap();
+    const b64 = arrayBufferToBase64(screenshot);
+
+    // 2. 调用 AutoGLM
+    addLog(`  步骤 ${step+1}: AutoGLM 分析中...`, 'log-info');
+    const url = cfg.glmBaseUrl.replace(/\/$/, '') + '/chat/completions';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.glmApiKey },
+      body: JSON.stringify({
+        model: cfg.glmModel,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: 'data:image/png;base64,' + b64 } },
+            { type: 'text', text: `当前任务: ${task.task}\n平台: ${task.platform || '未指定'}\n请分析屏幕内容并给出下一步操作。如果任务已完成，回复 {"action": "done"}。否则回复操作指令 JSON，如 {"action": "tap", "x": 500, "y": 800} 或 {"action": "swipe", "x1": 500, "y1": 800, "x2": 500, "y2": 200} 或 {"action": "type", "text": "内容"} 或 {"action": "keyevent", "key": 3}` }
+          ]
+        }],
+        temperature: 0.1
+      })
+    });
+
+    if (!res.ok) throw new Error(`AutoGLM API 错误: ${res.status}`);
+    const data = await res.json();
+    const reply = data.choices[0].message.content;
+
+    // 3. 解析并执行操作
+    const jsonMatch = reply.match(/\{[\s\S]*?\}/);
+    if (!jsonMatch) { addLog(`  AutoGLM 返回无法解析: ${reply.slice(0, 100)}`, 'log-warn'); continue; }
+    const action = JSON.parse(jsonMatch[0]);
+
+    if (action.action === 'done') {
+      addLog(`  任务完成`, 'log-ok');
+      return;
+    }
+
+    addLog(`  执行: ${JSON.stringify(action)}`, 'log-info');
+
+    if (action.action === 'tap') await adb.tap(action.x, action.y);
+    else if (action.action === 'swipe') await adb.swipe(action.x1, action.y1, action.x2, action.y2, action.duration || 300);
+    else if (action.action === 'type') await adb.shellText(`input text "${action.text}"`);
+    else if (action.action === 'keyevent') await adb.keyEvent(action.key);
+
+    // 等待操作生效
+    await sleep(1500);
+  }
+  throw new Error('超过最大步骤数');
+}
+
+function stopExecution() {
+  isExecuting = false;
+  addLog('用户停止执行', 'log-warn');
+}
+
+// ═══════════════ 飞书日报 ═══════════════
+async function sendDailyReport() {
+  const cfg = getConfig();
+  if (!cfg.feishuWebhook) { alert('请先配置飞书 Webhook'); return; }
+
+  addLog('正在生成日报...', 'log-info');
+  try {
+    // 收集今日日志
+    const logs = JSON.parse(localStorage.getItem(LOGS_KEY) || '[]');
+    const today = new Date().toISOString().split('T')[0];
+    const todayLogs = logs.filter(l => l.text.includes(today) || logs.indexOf(l) > logs.length - 50).map(l => l.text).join('\n');
+
+    // 用 LLM 生成日报
+    const report = await callLLM([
+      { role: 'system', content: '你是营销日报助手，根据执行日志生成简洁的日报摘要。' },
+      { role: 'user', content: `请根据以下执行日志生成今日营销日报:\n\n${todayLogs}\n\n格式：\n📊 今日营销日报\n日期：${today}\n\n执行概况：...\n完成任务：...\n问题与建议：...` }
+    ]);
+
+    // 发送到飞书
+    await fetch(cfg.feishuWebhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ msg_type: 'text', content: { text: report } })
+    });
+
+    addLog('✅ 日报已发送到飞书', 'log-ok');
+  } catch (e) {
+    addLog('❌ 日报发送失败: ' + e.message, 'log-err');
+  }
+}
+
+// ═══════════════ 工具函数 ═══════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function addLog(text, cls = 'log-info') {
+  const ts = new Date().toLocaleTimeString();
+  const fullText = `[${ts}] ${text}`;
+  const panel = document.getElementById('logPanel');
+  const div = document.createElement('div');
+  div.className = 'log-line ' + cls;
+  div.textContent = fullText;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
+  // 持久化
+  const logs = JSON.parse(localStorage.getItem(LOGS_KEY) || '[]');
+  logs.push({ text: fullText, type: cls });
+  if (logs.length > 500) logs.splice(0, logs.length - 500);
+  localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+}
+
+function clearLogs() {
+  document.getElementById('logPanel').innerHTML = '';
+  localStorage.removeItem(LOGS_KEY);
+}
+
+function arrayBufferToBase64(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// 初始化
+loadConfig();
+renderCalendar();
+</script>
+</body>
+</html>
