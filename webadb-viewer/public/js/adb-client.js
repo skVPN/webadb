@@ -209,11 +209,30 @@ export class AdbClient {
 
   /**
    * 截屏并返回 PNG 数据
-   * 使用 exec: 协议，不会对二进制数据做 \r\n 转义
+   * 优先 exec:（不转义二进制），失败则回退 shell: + \r\n 修复
    */
   async screencap() {
     if (!this.connected) throw new Error('设备未连接');
-    return await this._execStream('exec:screencap -p', 30000);
+
+    // 尝试 exec:
+    let data = await this._execStream('exec:screencap -p', 30000);
+    if (data.length > 8 && data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4E && data[3] === 0x47) {
+      return data;
+    }
+
+    // exec 失败，用 shell: + 修复 \r\n
+    data = await this._execStream('shell:screencap -p', 30000);
+    // shell 模式下 Android 把 0x0A 替换成 0x0D 0x0A，需要还原
+    const fixed = [];
+    for (let i = 0; i < data.length; i++) {
+      if (data[i] === 0x0D && i + 1 < data.length && data[i + 1] === 0x0A) {
+        fixed.push(0x0A);
+        i++;
+      } else {
+        fixed.push(data[i]);
+      }
+    }
+    return new Uint8Array(fixed);
   }
 
   async tap(x, y) {
