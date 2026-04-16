@@ -1,26 +1,39 @@
-# 📱 WebADB Viewer
+# 📱 即插即用的安卓 AI 营销日历
 
-**无需安装任何软件，直接在浏览器中连接和控制你的 Android 设备。**
+> **在浏览器中直接控制 Android 设备 — 无需安装软件、无需 ROOT、无需部署环境，跨平台兼容。**
+> **只需一根数据线和 Chrome 浏览器，即可轻松上手。**
 
 👉 **在线使用：[ac-sold.com](https://ac-sold.com)**
 
-基于 WebUSB API 和 ADB 协议的纯前端实现，打开网页即可连接 Android 设备进行截屏、触控、Shell 命令等操作。
+基于 WebUSB + ADB 协议 + AI 大模型，实现从设备连接、截屏控制到 AI 自动化营销的完整链路。
 
-![WebADB Viewer](https://img.shields.io/badge/WebADB-Viewer-6c5ce7?style=for-the-badge)
+![WebADB Viewer](https://img.shields.io/badge/WebADB-AI营销日历-6c5ce7?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+
+---
+
+## 🔌 两步上手
+
+**第一步：开启开发者模式**
+> 设置 → 关于手机 → 连续点击"软件版本"7次
+
+**第二步：连接使用**
+> USB 连接电脑 → 打开 [ac-sold.com](https://ac-sold.com) → 点击"连接设备"按钮
+
+就这么简单，无需安装任何东西。
 
 ---
 
 ## ✨ 功能特性
 
-- 🔌 **USB 直连** — 通过 WebUSB API 直接在浏览器中与 Android 设备通信
+- 🔌 **即插即用** — 一根数据线 + Chrome 浏览器，无需安装驱动或软件
+- 🤖 **AI 营销日历** — 对话式生成营销计划，AutoGLM 自动控制手机执行
 - 📸 **实时截屏** — 单次截屏 + 连续截屏模式，实时查看设备画面
 - 👆 **触摸控制** — 点击、滑动操作，直接在网页上控制手机
 - ⌨️ **ADB Shell** — 内置终端，执行任意 ADB Shell 命令
-- 🔐 **RSA 认证** — 完整实现 ADB 认证协议，密钥自动生成并持久化
-- 🏠 **虚拟按键** — Home、Back、Recent、Power、音量等快捷按键
-- 📚 **交互式教程** — 内置技术教程，深入讲解 WebADB 实现原理
-- 🌐 **零安装** — 纯前端实现，无需安装驱动或软件
+- 📅 **智能日历** — AI 生成营销任务，按日历自动调度执行
+- 🔔 **飞书通知** — 每日自动生成执行日报并推送到飞书群
+- 🌐 **跨平台** — Windows / macOS / Linux / ChromeOS 均可使用
 
 ## 🚀 快速开始
 
