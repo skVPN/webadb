@@ -330,39 +330,37 @@ window.toggleBlackScreen = async () => {
   } catch(e) { log('黑屏切换失败: '+e.message,'err'); }
 };
 
-// 物理黑屏：用电源键关闭屏幕，screencap 仍然能截到画面
+// 物理黑屏：亮度调到0，屏幕几乎全黑但系统认为屏幕开着
+// screencap 仍然能截到正常画面（OLED屏幕上完全黑）
 let physicalBlack = false;
 window.togglePhysicalBlackScreen = async () => {
   if (!client.connected) return;
   const btn = document.getElementById('btnBlackScreen');
   const wasStreaming = streaming;
   try {
-    // 必须先暂停连续截屏，否则操作锁被占着
     if (wasStreaming) stopStream();
     await new Promise(r => setTimeout(r, 200));
 
     if (!physicalBlack) {
-      await client.keyEvent(26); // KEYCODE_POWER 关屏
+      await client.shellText('settings put system screen_brightness_mode 0');
+      await client.shellText('settings put system screen_brightness 0');
       physicalBlack = true;
       btn.innerHTML = '<i data-lucide="sun" style="width:13px;height:13px"></i> 亮屏';
       btn.style.background = 'var(--warning)';
       btn.style.color = '#000';
       lucide.createIcons();
-      log('物理屏幕已关闭（省电+隐私），页面仍可操作', 'ok');
+      log('屏幕亮度已调至最低（省电+隐私），页面正常显示', 'ok');
     } else {
-      await client.keyEvent(26); // KEYCODE_POWER 亮屏
-      await new Promise(r => setTimeout(r, 500));
-      // 滑动解锁（从底部往上滑）
-      await client.swipe(540, 2000, 540, 800, 300);
+      await client.shellText('settings put system screen_brightness 128');
+      await client.shellText('settings put system screen_brightness_mode 1');
       physicalBlack = false;
       btn.innerHTML = '<i data-lucide="moon" style="width:13px;height:13px"></i> 黑屏';
       btn.style.background = '';
       btn.style.color = '';
       lucide.createIcons();
-      log('物理屏幕已恢复', 'ok');
+      log('屏幕亮度已恢复', 'ok');
     }
 
-    // 恢复连续截屏
     if (wasStreaming) setTimeout(() => startStream(), 300);
   } catch(e) {
     log('黑屏切换失败: '+e.message, 'err');
