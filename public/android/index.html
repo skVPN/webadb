@@ -283,20 +283,38 @@ canvas.addEventListener('mousemove', () => { if (dragStart) isDragging = true; }
 canvas.addEventListener('mouseup', async e => {
   if (!client.connected || !dragStart) return;
   const end = c2d(e);
+  const was = streaming;
   try {
+    if (was) stopStream();
+    await new Promise(r => setTimeout(r, 100));
     if (isDragging && (Math.abs(end.x-dragStart.x) > 30 || Math.abs(end.y-dragStart.y) > 30)) {
       await client.swipe(dragStart.x, dragStart.y, end.x, end.y, 300);
     } else {
       await client.tap(dragStart.x, dragStart.y);
     }
-    if (!streaming) setTimeout(captureOnce, 500);
-  } catch (e) { log('操作失败: ' + e.message, 'err'); }
+    if (was) setTimeout(() => startStream(), 300);
+  } catch (e) {
+    log('操作失败: ' + e.message, 'err');
+    if (was) setTimeout(() => startStream(), 300);
+  }
   dragStart = null; isDragging = false;
 });
 canvas.addEventListener('dragstart', e => e.preventDefault());
 
 // ═══ 按键/下载/黑屏 ═══
-window.sendKey = async (k) => { if (!client.connected) return; try { await client.keyEvent(k); if (!streaming) setTimeout(captureOnce, 300); } catch(e) { log('按键失败: '+e.message,'err'); } };
+window.sendKey = async (k) => {
+  if (!client.connected) return;
+  const was = streaming;
+  try {
+    if (was) stopStream();
+    await new Promise(r => setTimeout(r, 100));
+    await client.keyEvent(k);
+    if (was) setTimeout(() => startStream(), 200);
+  } catch(e) {
+    log('按键失败: '+e.message,'err');
+    if (was) setTimeout(() => startStream(), 200);
+  }
+};
 window.downloadScreenshot = async () => {
   try { const d = await client.screencap(); const b = new Blob([d],{type:'image/png'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href=u; a.download=`screenshot_${Date.now()}.png`; a.click(); URL.revokeObjectURL(u); } catch(e) { log('下载失败: '+e.message,'err'); }
 };
@@ -312,13 +330,14 @@ let physicalBlack = false;
 window.togglePhysicalBlackScreen = async () => {
   if (!client.connected) return;
   const btn = document.getElementById('btnBlackScreen');
+  const wasStreaming = streaming;
   try {
+    // 必须先暂停连续截屏，否则操作锁被占着
+    if (wasStreaming) stopStream();
+    await new Promise(r => setTimeout(r, 200));
+
     if (!physicalBlack) {
-      // 检查屏幕是否亮着
-      const state = await client.shellText('dumpsys power | grep "Display Power"');
-      if (state.includes('state=ON')) {
-        await client.keyEvent(26); // KEYCODE_POWER 关屏
-      }
+      await client.keyEvent(26); // KEYCODE_POWER 关屏
       physicalBlack = true;
       btn.innerHTML = '<i data-lucide="sun" style="width:13px;height:13px"></i> 亮屏';
       btn.style.background = 'var(--warning)';
@@ -326,11 +345,10 @@ window.togglePhysicalBlackScreen = async () => {
       lucide.createIcons();
       log('物理屏幕已关闭（省电+隐私），页面仍可操作', 'ok');
     } else {
-      // 唤醒屏幕
-      const state = await client.shellText('dumpsys power | grep "Display Power"');
-      if (state.includes('state=OFF')) {
-        await client.keyEvent(26); // KEYCODE_POWER 亮屏
-      }
+      await client.keyEvent(26); // KEYCODE_POWER 亮屏
+      await new Promise(r => setTimeout(r, 500));
+      // 滑动解锁（从底部往上滑）
+      await client.swipe(540, 2000, 540, 800, 300);
       physicalBlack = false;
       btn.innerHTML = '<i data-lucide="moon" style="width:13px;height:13px"></i> 黑屏';
       btn.style.background = '';
@@ -338,7 +356,13 @@ window.togglePhysicalBlackScreen = async () => {
       lucide.createIcons();
       log('物理屏幕已恢复', 'ok');
     }
-  } catch(e) { log('黑屏切换失败: '+e.message, 'err'); }
+
+    // 恢复连续截屏
+    if (wasStreaming) setTimeout(() => startStream(), 300);
+  } catch(e) {
+    log('黑屏切换失败: '+e.message, 'err');
+    if (wasStreaming) setTimeout(() => startStream(), 300);
+  }
 };
 window.handleDisconnect = async () => { stopStream(); await client.disconnect(); window.location.href = '/'; };
 
