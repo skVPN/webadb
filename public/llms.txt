@@ -1,43 +1,59 @@
-# WebADB Viewer
+# WebADB — 浏览器直连 Android，AI 自动化营销
 
-> 无需安装任何软件，直接在浏览器中通过 WebUSB + ADB 协议连接和控制 Android 设备。
+> 无需安装软件、无需 ROOT、无需部署环境。一根数据线 + Chrome 浏览器，在网页中直接控制 Android 设备并执行 AI 营销任务。
 
-在线使用: https://ac-sold.com
-GitHub: https://github.com/skVPN/webadb
+## 基本信息
 
-## 功能
+- 网站: https://ac-sold.com
+- GitHub: https://github.com/skVPN/webadb
+- 协议: MIT License
+- 公司: 钛动科技 (Tec-Do)
+- 微信公众号: codgank
 
-- USB 直连 Android 设备（WebUSB API）
-- 实时截屏（单次 + 连续模式）
-- 触摸控制（点击、滑动）
-- ADB Shell 终端
-- RSA 认证（密钥自动生成并持久化）
-- 虚拟按键（Home、Back、Recent、Power、音量）
+## 核心功能
+
+- 实时截屏与触控: 通过 WebUSB + ADB 协议在浏览器中实时查看和操控 Android 设备
+- AI 营销日历: 对话式生成营销计划，AutoGLM 视觉大模型自动控制手机执行
+- ADB Shell 终端: 内置命令行终端，执行任意 ADB Shell 命令
+- 物理黑屏: 降低屏幕亮度省电，页面仍可正常操控
+- 飞书通知: 每日自动生成执行日报并推送到飞书群
+- 多设备管理: 多标签页多设备，数据按设备隔离存储
 
 ## 技术架构
 
-纯前端实现，无后端依赖。核心模块：
+纯前端实现，无后端依赖，所有数据本地处理。
 
-- adb-protocol.js: ADB 协议消息构建/解析（CNXN/AUTH/OPEN/WRTE/OKAY/CLSE）
+- adb-protocol.js: ADB 协议消息构建/解析 (CNXN/AUTH/OPEN/WRTE/OKAY/CLSE)
 - adb-transport.js: WebUSB 传输层，浏览器直接与 USB 设备通信
-- adb-crypto.js: RSA 密钥生成、PKCS#1 v1.5 Prehashed 签名、Android 自定义公钥格式（524字节结构体）
-- adb-client.js: 高层 API，封装连接、认证、shell、截屏、触控，带操作锁防止并发冲突
+- adb-crypto.js: RSA 密钥生成、PKCS#1 v1.5 Prehashed 签名、Android 自定义公钥格式
+- adb-client.js: 高层 API，封装连接、认证、shell、截屏、触控，带操作锁
+
+## 页面结构
+
+- /: Landing Page — 产品介绍、功能展示、使用步骤、FAQ
+- /android/?device=xxx: 设备控制页 — 实时截屏、触控、AI 对话、日历、Shell
+- /ai/: AI 配置页 — LLM 模型、AutoGLM、飞书机器人配置与测试
+- /course/: 交互式技术教程 — ADB 协议、WebUSB、RSA 认证、截屏实战
+- /about/: 关于页面 — 公司信息、联系方式、隐私政策、免责声明
+- /conversation/webadb%20html%20andorid.md: VibeCoding 开发对话记录
 
 ## 使用前提
 
-- Android 设备开启 USB 调试
-- Chromium 内核浏览器（Chrome、Edge）
-- HTTPS 环境（WebUSB 要求 Secure Context）
-- 电脑上的 ADB server 需先关闭（adb kill-server）
+1. Android 设备开启开发者模式（设置→关于手机→连续点击软件版本7次）
+2. 开启 USB 调试
+3. 使用 Chromium 内核浏览器（Chrome、Edge）
+4. HTTPS 环境（在线版本自带）
+5. 如电脑运行了 ADB server，需先执行 adb kill-server
 
-## 页面
+## 隐私与安全
 
-- / — 主工具页面
-- /course/ — 交互式技术教程（ADB 协议、WebUSB、RSA 认证、截屏实战）
-- /about/ — 关于页面、联系方式、隐私政策、免责声明
-- /conversation/webadb%20html%20andorid.md — VibeCoding 开发对话记录
+- 所有数据 100% 在浏览器本地处理，不上传任何服务器
+- RSA 密钥对存储在 localStorage，仅用于 ADB 认证
+- 项目完全开源（MIT），代码可审计
+- 本站使用 Google AdSense 展示广告
 
-## 联系
+## 联系方式
 
-公司: 钛动科技
-微信公众号: codgank
+- 公司: 钛动科技 (Tec-Do)
+- 微信公众号: codgank
+- GitHub: https://github.com/skVPN/webadb

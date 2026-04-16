@@ -1,4 +1,13 @@
 User-agent: *
 Allow: /
+Allow: /course/
+Allow: /about/
+Allow: /ai/
+Allow: /android/
+Allow: /conversation/
+Disallow: /js/
 
 Sitemap: https://ac-sold.com/sitemap.xml
+
+# LLM 友好
+# 详细站点信息见 /llms.txt
