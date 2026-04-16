@@ -105,7 +105,7 @@ a{color:var(--accent2);text-decoration:none}
       <span>设备屏幕</span>
       <div style="display:flex;gap:4px">
         <button class="btn" onclick="downloadScreenshot()"><i data-lucide="download" style="width:13px;height:13px"></i> 截图</button>
-        <button class="btn" id="btnStream" onclick="toggleStream()"><i data-lucide="play" style="width:13px;height:13px"></i> 连续</button>
+        <button class="btn" id="btnBlackScreen" onclick="togglePhysicalBlackScreen()"><i data-lucide="moon" style="width:13px;height:13px"></i> 黑屏</button>
       </div>
     </div>
     <div class="screen-container">
@@ -119,7 +119,6 @@ a{color:var(--accent2);text-decoration:none}
       <button class="btn" onclick="sendKey(26)" title="Power"><i data-lucide="power" style="width:14px;height:14px"></i></button>
       <button class="btn" onclick="sendKey(24)" title="Vol+"><i data-lucide="volume-2" style="width:14px;height:14px"></i></button>
       <button class="btn" onclick="sendKey(25)" title="Vol-"><i data-lucide="volume-1" style="width:14px;height:14px"></i></button>
-      <button class="btn" id="btnBlack" onclick="toggleBlackScreen()" title="物理黑屏"><i data-lucide="moon" style="width:14px;height:14px"></i></button>
       <span class="fps-display" id="fpsDisplay"></span>
     </div>
   </div>
@@ -206,8 +205,14 @@ client.onLog = (m) => log(m, 'sys');
       document.getElementById('infoBattery').textContent = (info.battery || '').replace(/.*level:\s*/, '') + '%';
     } catch (_) {}
 
-    // Home + 开始连续截屏
-    try { await client.keyEvent(3); log('已按 Home 键', 'sys'); } catch (_) {}
+    // Home 3次 + 开始连续截屏
+    try {
+      await client.keyEvent(3); log('Home 1/3', 'sys');
+      await new Promise(r => setTimeout(r, 1000));
+      await client.keyEvent(3); log('Home 2/3', 'sys');
+      await new Promise(r => setTimeout(r, 1000));
+      await client.keyEvent(3); log('Home 3/3', 'sys');
+    } catch (_) {}
     setTimeout(() => startStream(), 500);
 
   } catch (e) {
@@ -226,16 +231,12 @@ async function captureOnce() {
 
 function startStream() {
   streaming = true; streamErrors = 0;
-  document.getElementById('btnStream').innerHTML = '<i data-lucide="pause" style="width:13px;height:13px"></i> 暂停';
-  lucide.createIcons();
   streamLoop();
 }
 
 function stopStream() {
   streaming = false;
-  document.getElementById('btnStream').innerHTML = '<i data-lucide="play" style="width:13px;height:13px"></i> 连续';
   document.getElementById('fpsDisplay').textContent = '';
-  lucide.createIcons();
   if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
 }
 
@@ -304,6 +305,40 @@ window.toggleBlackScreen = async () => {
     if (!isBlack) { await client.shellText('settings put system screen_brightness 0'); await client.shellText('settings put system screen_brightness_mode 0'); isBlack = true; log('黑屏已开启','ok'); }
     else { await client.shellText('settings put system screen_brightness_mode 1'); await client.shellText('settings put system screen_brightness 128'); isBlack = false; log('屏幕已恢复','ok'); }
   } catch(e) { log('黑屏切换失败: '+e.message,'err'); }
+};
+
+// 物理黑屏：用电源键关闭屏幕，screencap 仍然能截到画面
+let physicalBlack = false;
+window.togglePhysicalBlackScreen = async () => {
+  if (!client.connected) return;
+  const btn = document.getElementById('btnBlackScreen');
+  try {
+    if (!physicalBlack) {
+      // 检查屏幕是否亮着
+      const state = await client.shellText('dumpsys power | grep "Display Power"');
+      if (state.includes('state=ON')) {
+        await client.keyEvent(26); // KEYCODE_POWER 关屏
+      }
+      physicalBlack = true;
+      btn.innerHTML = '<i data-lucide="sun" style="width:13px;height:13px"></i> 亮屏';
+      btn.style.background = 'var(--warning)';
+      btn.style.color = '#000';
+      lucide.createIcons();
+      log('物理屏幕已关闭（省电+隐私），页面仍可操作', 'ok');
+    } else {
+      // 唤醒屏幕
+      const state = await client.shellText('dumpsys power | grep "Display Power"');
+      if (state.includes('state=OFF')) {
+        await client.keyEvent(26); // KEYCODE_POWER 亮屏
+      }
+      physicalBlack = false;
+      btn.innerHTML = '<i data-lucide="moon" style="width:13px;height:13px"></i> 黑屏';
+      btn.style.background = '';
+      btn.style.color = '';
+      lucide.createIcons();
+      log('物理屏幕已恢复', 'ok');
+    }
+  } catch(e) { log('黑屏切换失败: '+e.message, 'err'); }
 };
 window.handleDisconnect = async () => { stopStream(); await client.disconnect(); window.location.href = '/'; };
 
