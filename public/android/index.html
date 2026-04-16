@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>设备控制 - WebADB Viewer</title>
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--surface:#1a1d27;--surface2:#242836;--border:#2e3345;--text:#e4e6ed;--text2:#8b8fa3;--accent:#2563EB;--accent2:#a29bfe;--success:#059669;--danger:#e17055;--warning:#fdcb6e}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--accent2);text-decoration:none}
+
+.navbar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.navbar .logo{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+.navbar .logo span{color:var(--accent)}
+.nav-links{display:flex;gap:12px;font-size:12px;align-items:center}
+.nav-links a{color:var(--text2);display:flex;align-items:center;gap:3px;cursor:pointer}
+.nav-links a:hover{color:var(--accent)}
+.device-badge{background:var(--success);color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px}
+
+.main{display:flex;height:calc(100vh - 41px)}
+
+/* 左侧屏幕 */
+.screen-panel{flex:0 0 380px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.screen-header{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500}
+.screen-container{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
+.screen-container canvas{max-width:100%;max-height:100%;border-radius:8px;cursor:crosshair;background:#000}
+.screen-placeholder{color:var(--text2);text-align:center;font-size:13px}
+.screen-controls{padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.fps-display{margin-left:auto;font-size:11px;color:var(--text2)}
+
+.btn{padding:5px 12px;border:none;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px;color:var(--text);background:var(--surface2);border:1px solid var(--border)}
+.btn:hover{background:var(--border)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+
+/* 右侧面板 */
+.right-panel{flex:1;display:flex;flex-direction:column;min-width:0}
+.info-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:6px 16px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px}
+.info-bar .label{color:var(--text2)}
+.info-bar .val{font-weight:600}
+
+/* AI 面板 */
+.ai-panel{display:flex;border-bottom:1px solid var(--border);height:45%}
+.ai-chat{flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border);min-width:0}
+.ai-chat-hd{padding:6px 12px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px}
+.ai-msgs{flex:1;overflow-y:auto;padding:8px;font-size:12px;line-height:1.5}
+.ai-m{margin-bottom:6px;max-width:85%}
+.ai-m.user{margin-left:auto;text-align:right}
+.ai-m .b{display:inline-block;padding:5px 10px;border-radius:8px;text-align:left}
+.ai-m.user .b{background:var(--accent);color:#fff}
+.ai-m.ai .b{background:var(--surface2);border:1px solid var(--border)}
+.ai-input{display:flex;border-top:1px solid var(--border)}
+.ai-input input{flex:1;padding:8px 10px;background:transparent;border:none;color:var(--text);font-size:12px;outline:none}
+.ai-input button{padding:8px 14px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:12px}
+
+/* 迷你日历 */
+.mini-cal{flex:0 0 260px;display:flex;flex-direction:column;overflow-y:auto}
+.mc-hd{padding:6px 10px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+.mc-hd button{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:1px 4px}
+.mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:4px 6px;font-size:10px}
+.mc-dh{text-align:center;color:var(--text2);padding:2px 0;font-weight:600}
+.mc-d{text-align:center;padding:2px;border-radius:3px;cursor:pointer;position:relative}
+.mc-d:hover{background:var(--surface2)}
+.mc-d.today{background:#2563EB22;color:var(--accent);font-weight:700}
+.mc-d.has-task::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--success)}
+.mc-tasks{padding:4px 8px;font-size:10px;color:var(--text2);overflow-y:auto;flex:1}
+.mc-ti{padding:2px 5px;margin:1px 0;background:var(--surface2);border-radius:3px;border-left:2px solid var(--success)}
+
+/* 终端 */
+.terminal{flex:1;display:flex;flex-direction:column;min-height:0}
+.term-hd{padding:6px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600}
+.term-out{flex:1;background:#0d0f14;padding:8px 12px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+.term-out .l{margin-bottom:1px}
+.term-out .sys{color:var(--accent2)}
+.term-out .err{color:var(--danger)}
+.term-out .ok{color:var(--success)}
+.term-out .cmd{color:var(--warning)}
+.term-in{display:flex;background:var(--surface);border-top:1px solid var(--border)}
+.term-in span{padding:6px 8px;color:var(--success);font-family:monospace;font-size:12px}
+.term-in input{flex:1;background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 0;outline:none}
+
+@media(max-width:900px){.main{flex-direction:column}.screen-panel{flex:0 0 auto;max-height:50vh;border-right:none;border-bottom:1px solid var(--border)}.mini-cal{display:none}}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo"><i data-lucide="smartphone" style="width:16px;height:16px;color:var(--accent)"></i> <span>WebADB</span> <span id="deviceLabel" style="color:var(--text2);font-size:12px;font-weight:400;margin-left:4px"></span></div>
+  <div class="nav-links">
+    <span class="device-badge" id="connBadge"><i data-lucide="wifi" style="width:12px;height:12px"></i> 连接中...</span>
+    <a href="/"><i data-lucide="home" style="width:14px;height:14px"></i> 首页</a>
+    <a href="/ai/"><i data-lucide="settings" style="width:14px;height:14px"></i> AI配置</a>
+    <button class="btn btn-danger" id="btnDisconnect" onclick="handleDisconnect()" style="font-size:11px;padding:3px 10px">断开</button>
+  </div>
+</nav>
+
+<div class="main">
+  <!-- 左侧屏幕 -->
+  <div class="screen-panel">
+    <div class="screen-header">
+      <span>设备屏幕</span>
+      <div style="display:flex;gap:4px">
+        <button class="btn" onclick="downloadScreenshot()"><i data-lucide="download" style="width:13px;height:13px"></i> 截图</button>
+        <button class="btn" id="btnStream" onclick="toggleStream()"><i data-lucide="play" style="width:13px;height:13px"></i> 连续</button>
+      </div>
+    </div>
+    <div class="screen-container">
+      <div class="screen-placeholder" id="placeholder">连接设备后自动开始截屏...</div>
+      <canvas id="screenCanvas" style="display:none"></canvas>
+    </div>
+    <div class="screen-controls">
+      <button class="btn" onclick="sendKey(3)" title="Home"><i data-lucide="home" style="width:14px;height:14px"></i></button>
+      <button class="btn" onclick="sendKey(4)" title="Back"><i data-lucide="arrow-left" style="width:14px;height:14px"></i></button>
+      <button class="btn" onclick="sendKey(187)" title="Recent"><i data-lucide="layers" style="width:14px;height:14px"></i></button>
+      <button class="btn" onclick="sendKey(26)" title="Power"><i data-lucide="power" style="width:14px;height:14px"></i></button>
+      <button class="btn" onclick="sendKey(24)" title="Vol+"><i data-lucide="volume-2" style="width:14px;height:14px"></i></button>
+      <button class="btn" onclick="sendKey(25)" title="Vol-"><i data-lucide="volume-1" style="width:14px;height:14px"></i></button>
+      <button class="btn" id="btnBlack" onclick="toggleBlackScreen()" title="物理黑屏"><i data-lucide="moon" style="width:14px;height:14px"></i></button>
+      <span class="fps-display" id="fpsDisplay"></span>
+    </div>
+  </div>
+
+  <!-- 右侧 -->
+  <div class="right-panel">
+    <div class="info-bar" id="infoBar">
+      <span><span class="label">设备:</span> <span class="val" id="infoModel">-</span></span>
+      <span><span class="label">Android:</span> <span class="val" id="infoVersion">-</span></span>
+      <span><span class="label">分辨率:</span> <span class="val" id="infoRes">-</span></span>
+      <span><span class="label">电量:</span> <span class="val" id="infoBattery">-</span></span>
+    </div>
+
+    <!-- AI + 日历 -->
+    <div class="ai-panel">
+      <div class="ai-chat">
+        <div class="ai-chat-hd"><i data-lucide="bot" style="width:14px;height:14px;color:var(--accent)"></i> AI 营销助手</div>
+        <div class="ai-msgs" id="aiMsgs"><div class="ai-m ai"><div class="b">输入营销需求生成日历，如"7月小红书，蓝牙耳机，每周3次"</div></div></div>
+        <div class="ai-input">
+          <input id="aiInput" placeholder="描述营销需求..." onkeydown="if(event.key==='Enter')sendAiChat()">
+          <button onclick="sendAiChat()">发送</button>
+        </div>
+      </div>
+      <div class="mini-cal">
+        <div class="mc-hd"><button onclick="changeMo(-1)">&lt;</button><span id="mcTitle"></span><button onclick="changeMo(1)">&gt;</button></div>
+        <div class="mc-grid" id="mcGrid"></div>
+        <div class="mc-tasks" id="mcTasks"></div>
+      </div>
+    </div>
+
+    <!-- 终端 -->
+    <div class="terminal">
+      <div class="term-hd"><span>ADB Shell</span><button class="btn" onclick="clearTerm()" style="font-size:11px">清空</button></div>
+      <div class="term-out" id="termOut"></div>
+      <div class="term-in"><span>$</span><input id="cmdIn" placeholder="输入命令..." onkeydown="if(event.key==='Enter')runCmd()" disabled></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { AdbClient } from '/js/adb-client.js';
+
+// ═══ 状态 ═══
+const params = new URLSearchParams(location.search);
+const deviceId = params.get('device') || 'unknown';
+const serial = sessionStorage.getItem('webadb_device_serial') || '';
+const client = new AdbClient();
+let streaming = false, streamTimer = null, streamErrors = 0;
+let screenW = 0, screenH = 0, isBlack = false;
+let dragStart = null, isDragging = false;
+
+// 日历
+const CAL_KEY = 'webadb_cal_' + deviceId;
+const CFG_KEY = 'webadb_ai_config';
+let calData = JSON.parse(localStorage.getItem(CAL_KEY) || '{}');
+let calM = new Date().getMonth(), calY = new Date().getFullYear();
+
+document.getElementById('deviceLabel').textContent = deviceId;
+client.onLog = (m) => log(m, 'sys');
+
+// ═══ 自动重连 ═══
+(async () => {
+  log('正在重新连接设备...', 'sys');
+  try {
+    // 用 getDevices 获取已授权设备（不需要用户再次选择）
+    const devices = await navigator.usb.getDevices();
+    const target = serial ? devices.find(d => d.serialNumber === serial) : devices[0];
+    if (!target) throw new Error('未找到已授权设备，请返回首页重新连接');
+
+    // 直接打开设备（跳过 requestDevice）
+    client.transport.device = target;
+    await target.open();
+    if (!target.configuration) await target.selectConfiguration(1);
+
+    // 查找 ADB 接口
+    const config = target.configuration;
+    for (const iface of config.interfaces) {
+      for (const alt of iface.alternates) {
+        if (alt.interfaceClass === 0xFF && alt.interfaceSubclass === 0x42 && alt.interfaceProtocol === 0x01) {
+          client.transport.interfaceNumber = iface.interfaceNumber;
+          for (const ep of alt.endpoints) {
+            if (ep.direction === 'in') client.transport.endpointIn = ep;
+            if (ep.direction === 'out') client.transport.endpointOut = ep;
+          }
+          break;
+        }
+      }
+      if (client.transport.interfaceNumber >= 0) break;
+    }
+    await target.claimInterface(client.transport.interfaceNumber);
+
+    // ADB 握手
+    const { AdbProtocol } = await import('/js/adb-protocol.js');
+    await client.transport.send(AdbProtocol.connect());
+
+    let triedSig = false;
+    for (let i = 0; i < 30; i++) {
+      const msg = await client.transport.receive(30000);
+      if (msg.command === AdbProtocol.COMMANDS.CLSE) continue;
+      if (msg.command === AdbProtocol.COMMANDS.CNXN) {
+        client.connected = true;
+        client.deviceInfo = new TextDecoder().decode(msg.data).replace(/\0/g, '');
+        break;
+      }
+      if (msg.command === AdbProtocol.COMMANDS.AUTH) {
+        if (msg.arg0 === 1 && !triedSig) {
+          triedSig = true;
+          const sig = await client.keyStore.sign(msg.data);
+          await client.transport.send(AdbProtocol.authSignature(new Uint8Array(sig)));
+          continue;
+        }
+        const pk = await client.keyStore.getPublicKeyPayload();
+        await client.transport.send(AdbProtocol.authPublicKey(pk));
+      }
+    }
+
+    if (!client.connected) throw new Error('认证失败');
+
+    log('✅ 设备已连接', 'ok');
+    document.getElementById('connBadge').innerHTML = '<i data-lucide="wifi" style="width:12px;height:12px"></i> 已连接';
+    document.getElementById('connBadge').style.background = 'var(--success)';
+    document.getElementById('cmdIn').disabled = false;
+    lucide.createIcons();
+
+    // 获取设备信息
+    try {
+      const info = await client.getDeviceInfo();
+      document.getElementById('infoModel').textContent = (info.brand || '') + ' ' + (info.model || '');
+      document.getElementById('infoVersion').textContent = info.version || '-';
+      document.getElementById('infoRes').textContent = (info.resolution || '').replace('Physical size: ', '');
+      document.getElementById('infoBattery').textContent = (info.battery || '').replace(/.*level:\s*/, '') + '%';
+    } catch (_) {}
+
+    // Home + 开始连续截屏
+    try { await client.keyEvent(3); } catch (_) {}
+    setTimeout(() => startStream(), 500);
+
+  } catch (e) {
+    log('❌ ' + e.message, 'err');
+    document.getElementById('connBadge').textContent = '连接失败';
+    document.getElementById('connBadge').style.background = 'var(--danger)';
+  }
+})();
+
+// ═══ 截屏 ═══
+async function captureOnce() {
+  const data = await client.screencap();
+  await renderScreen(data);
+  return data;
+}
+
+function startStream() {
+  streaming = true; streamErrors = 0;
+  document.getElementById('btnStream').innerHTML = '<i data-lucide="pause" style="width:13px;height:13px"></i> 暂停';
+  lucide.createIcons();
+  streamLoop();
+}
+
+function stopStream() {
+  streaming = false;
+  document.getElementById('btnStream').innerHTML = '<i data-lucide="play" style="width:13px;height:13px"></i> 连续';
+  document.getElementById('fpsDisplay').textContent = '';
+  lucide.createIcons();
+  if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
+}
+
+window.toggleStream = () => streaming ? stopStream() : startStream();
+
+async function streamLoop() {
+  if (!streaming || !client.connected) return;
+  try {
+    const t0 = performance.now();
+    const data = await client.screencap();
+    await renderScreen(data);
+    const fps = (1000 / (performance.now() - t0)).toFixed(1);
+    document.getElementById('fpsDisplay').textContent = `${fps} FPS`;
+    streamErrors = 0;
+  } catch (e) {
+    if (++streamErrors >= 3) { log('截屏多次失败: ' + e.message, 'err'); stopStream(); return; }
+  }
+  if (streaming) streamTimer = setTimeout(streamLoop, 0);
+}
+
+async function renderScreen(png) {
+  const blob = new Blob([png], { type: 'image/png' });
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  return new Promise((res, rej) => {
+    img.onload = () => {
+      const c = document.getElementById('screenCanvas');
+      c.width = img.width; c.height = img.height;
+      screenW = img.width; screenH = img.height;
+      c.getContext('2d').drawImage(img, 0, 0);
+      c.style.display = ''; document.getElementById('placeholder').style.display = 'none';
+      URL.revokeObjectURL(url); res();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('图片解码失败')); };
+    img.src = url;
+  });
+}
+
+// ═══ 触摸/滑动 ═══
+const canvas = document.getElementById('screenCanvas');
+function c2d(e) { const r = canvas.getBoundingClientRect(); return { x: (e.clientX-r.left)*screenW/r.width, y: (e.clientY-r.top)*screenH/r.height }; }
+canvas.addEventListener('mousedown', e => { if (!client.connected) return; dragStart = c2d(e); isDragging = false; });
+canvas.addEventListener('mousemove', () => { if (dragStart) isDragging = true; });
+canvas.addEventListener('mouseup', async e => {
+  if (!client.connected || !dragStart) return;
+  const end = c2d(e);
+  try {
+    if (isDragging && (Math.abs(end.x-dragStart.x) > 30 || Math.abs(end.y-dragStart.y) > 30)) {
+      await client.swipe(dragStart.x, dragStart.y, end.x, end.y, 300);
+    } else {
+      await client.tap(dragStart.x, dragStart.y);
+    }
+    if (!streaming) setTimeout(captureOnce, 500);
+  } catch (e) { log('操作失败: ' + e.message, 'err'); }
+  dragStart = null; isDragging = false;
+});
+canvas.addEventListener('dragstart', e => e.preventDefault());
+
+// ═══ 按键/下载/黑屏 ═══
+window.sendKey = async (k) => { if (!client.connected) return; try { await client.keyEvent(k); if (!streaming) setTimeout(captureOnce, 300); } catch(e) { log('按键失败: '+e.message,'err'); } };
+window.downloadScreenshot = async () => {
+  try { const d = await client.screencap(); const b = new Blob([d],{type:'image/png'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href=u; a.download=`screenshot_${Date.now()}.png`; a.click(); URL.revokeObjectURL(u); } catch(e) { log('下载失败: '+e.message,'err'); }
+};
+window.toggleBlackScreen = async () => {
+  try {
+    if (!isBlack) { await client.shellText('settings put system screen_brightness 0'); await client.shellText('settings put system screen_brightness_mode 0'); isBlack = true; log('黑屏已开启','ok'); }
+    else { await client.shellText('settings put system screen_brightness_mode 1'); await client.shellText('settings put system screen_brightness 128'); isBlack = false; log('屏幕已恢复','ok'); }
+  } catch(e) { log('黑屏切换失败: '+e.message,'err'); }
+};
+window.handleDisconnect = async () => { stopStream(); await client.disconnect(); window.location.href = '/'; };
+
+// ═══ Shell ═══
+window.runCmd = async () => {
+  const inp = document.getElementById('cmdIn'); const cmd = inp.value.trim(); if (!cmd) return; inp.value = '';
+  log('$ ' + cmd, 'cmd');
+  try { const r = await client.shellText(cmd); if (r) log(r); } catch(e) { log('命令失败: '+e.message,'err'); }
+};
+window.clearTerm = () => { document.getElementById('termOut').innerHTML = ''; };
+
+function log(t, cls='') {
+  const el = document.getElementById('termOut');
+  const d = document.createElement('div'); d.className = 'l ' + cls; d.textContent = `[${new Date().toLocaleTimeString()}] ${t}`;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+
+// ═══ AI 日历 ═══
+window.sendAiChat = async () => {
+  const inp = document.getElementById('aiInput'); const msg = inp.value.trim(); if (!msg) return; inp.value = '';
+  appendAi(msg, 'user'); appendAi('生成中...', 'ai');
+  try {
+    const cfg = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
+    if (!cfg.llmBaseUrl || !cfg.llmApiKey) throw new Error('请先在 AI配置 页面配置模型');
+    const res = await fetch(cfg.llmBaseUrl.replace(/\/$/,'') + '/chat/completions', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.llmApiKey },
+      body: JSON.stringify({ model: cfg.llmModel, messages: [
+        { role: 'system', content: '你是营销日历助手，只返回JSON。' },
+        { role: 'user', content: `需求："${msg}"\n返回：{"tasks":[{"date":"2025-07-15","time":"10:00","platform":"小红书","task":"发布测评"}]}\n当前:${new Date().toISOString().split('T')[0]}` }
+      ], temperature: 0.7 })
+    });
+    if (!res.ok) throw new Error('API ' + res.status);
+    const data = await res.json();
+    const m = data.choices[0].message.content.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('格式错误');
+    const p = JSON.parse(m[0]);
+    if (p.tasks?.length) {
+      p.tasks.forEach(t => { if (!calData[t.date]) calData[t.date] = []; calData[t.date].push({task:t.task,time:t.time,platform:t.platform,done:false}); });
+      localStorage.setItem(CAL_KEY, JSON.stringify(calData));
+      renderCal();
+      document.getElementById('aiMsgs').removeChild(document.getElementById('aiMsgs').lastChild);
+      appendAi(`✅ 生成 ${p.tasks.length} 条任务`, 'ai');
+    }
+  } catch(e) {
+    document.getElementById('aiMsgs').removeChild(document.getElementById('aiMsgs').lastChild);
+    appendAi('❌ ' + e.message, 'ai');
+  }
+};
+
+function appendAi(t, r) {
+  const el = document.getElementById('aiMsgs');
+  const d = document.createElement('div'); d.className = 'ai-m ' + r;
+  d.innerHTML = `<div class="b">${t}</div>`; el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+
+// ═══ 迷你日历 ═══
+window.changeMo = (d) => { calM += d; if (calM > 11) { calM = 0; calY++; } if (calM < 0) { calM = 11; calY--; } renderCal(); };
+
+function renderCal() {
+  const g = document.getElementById('mcGrid');
+  document.getElementById('mcTitle').textContent = `${calY}年${calM+1}月`;
+  const fd = new Date(calY, calM, 1).getDay(), dm = new Date(calY, calM+1, 0).getDate(), td = new Date();
+  let h = ['日','一','二','三','四','五','六'].map(d => `<div class="mc-dh">${d}</div>`).join('');
+  for (let i = 0; i < fd; i++) h += '<div></div>';
+  for (let d = 1; d <= dm; d++) {
+    const ds = `${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const tasks = calData[ds] || [];
+    const isT = td.getFullYear()===calY && td.getMonth()===calM && td.getDate()===d;
+    h += `<div class="mc-d${isT?' today':''}${tasks.length?' has-task':''}">${d}</div>`;
+  }
+  g.innerHTML = h;
+  // 近期任务
+  const te = document.getElementById('mcTasks'); const now = new Date(); const items = [];
+  for (let i = -14; i <= 14; i++) { const d = new Date(now); d.setDate(d.getDate()+i); const ds = d.toISOString().split('T')[0]; (calData[ds]||[]).forEach(t => items.push(`<div class="mc-ti"><b>${ds.slice(5)}</b> ${t.time||''} ${t.task}</div>`)); }
+  te.innerHTML = items.length ? items.join('') : '<div style="padding:6px;color:var(--text2)">近期无任务</div>';
+}
+
+renderCal();
+lucide.createIcons();
+</script>
+</body>
+</html>
