@@ -12,6 +12,22 @@
   <meta property="og:url" content="https://ac-sold.com">
   <link rel="canonical" href="https://ac-sold.com">
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'] },
+          colors: {
+            primary: '#2563EB', accent: '#059669', surface: '#1a1d27',
+            surface2: '#242836', border: '#2e3345', danger: '#e17055',
+          }
+        }
+      }
+    }
+  </script>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2556420619736917"
      crossorigin="anonymous"></script>
   <style>
@@ -368,30 +384,81 @@
 
   <div class="main">
     <!-- 欢迎页 -->
-    <div class="welcome" id="welcomePage">
-      <div class="welcome-icon">📱</div>
-      <h2>即插即用的安卓 AI 营销日历</h2>
-      <p>在浏览器中直接控制 Android 设备 — 无需安装软件、无需 ROOT、无需部署环境，跨平台兼容。<br>只需一根数据线和 Chrome 浏览器，即可轻松上手。</p>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <h3>开启开发者模式</h3>
-          <p>设置 → 关于手机 → 连续点击"软件版本"7次</p>
+    <div class="welcome" id="welcomePage" style="padding:0;gap:0;">
+      <!-- Hero -->
+      <div style="width:100%;text-align:center;padding:48px 24px 32px;background:linear-gradient(180deg,#0a0d14 0%,#0f1117 100%);">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#059669;color:#fff;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:20px;">
+          <i data-lucide="zap" style="width:14px;height:14px;"></i> 即插即用 · 无需安装
         </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <h3>USB 连接电脑</h3>
-          <p>用数据线连接手机，打开 ac-sold.com</p>
+        <h2 style="font-size:clamp(24px,4vw,36px);font-weight:800;line-height:1.2;margin-bottom:12px;">
+          安卓 <span style="color:#2563EB;">AI 营销日历</span>
+        </h2>
+        <p style="color:var(--text2);font-size:15px;max-width:520px;margin:0 auto 24px;line-height:1.6;">
+          在浏览器中直接控制 Android 设备 — 无需 ROOT、无需部署环境，跨平台兼容。<br>只需一根数据线和 Chrome 浏览器。
+        </p>
+        <button class="btn btn-primary" style="padding:12px 32px;font-size:16px;border-radius:10px;background:#2563EB;" onclick="handleConnect()">
+          <i data-lucide="plug" style="width:18px;height:18px;"></i> 连接 Android 设备
+        </button>
+      </div>
+
+      <!-- Bento Grid -->
+      <div style="width:100%;max-width:800px;margin:0 auto;padding:0 24px 40px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        <!-- 步骤 1 -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;grid-column:span 1;">
+          <div style="width:36px;height:36px;border-radius:10px;background:#2563EB22;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+            <i data-lucide="smartphone" style="width:20px;height:20px;color:#2563EB;"></i>
+          </div>
+          <div style="font-size:11px;color:#2563EB;font-weight:700;margin-bottom:4px;">步骤 1</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;">开启开发者模式</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">设置 → 关于手机 → 连续点击"软件版本"7次</div>
         </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <h3>点击连接</h3>
-          <p>点击下方按钮，选择你的设备即可使用</p>
+        <!-- 步骤 2 -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;grid-column:span 1;">
+          <div style="width:36px;height:36px;border-radius:10px;background:#05966922;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+            <i data-lucide="cable" style="width:20px;height:20px;color:#059669;"></i>
+          </div>
+          <div style="font-size:11px;color:#059669;font-weight:700;margin-bottom:4px;">步骤 2</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;">USB 连接电脑</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">用数据线连接手机，打开 <a href="https://ac-sold.com" style="color:#2563EB;">ac-sold.com</a></div>
+        </div>
+        <!-- 步骤 3 -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;grid-column:span 1;">
+          <div style="width:36px;height:36px;border-radius:10px;background:#2563EB22;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+            <i data-lucide="mouse-pointer-click" style="width:20px;height:20px;color:#2563EB;"></i>
+          </div>
+          <div style="font-size:11px;color:#2563EB;font-weight:700;margin-bottom:4px;">步骤 3</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;">点击连接</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">点击上方按钮，选择设备即可使用</div>
+        </div>
+
+        <!-- 功能卡片 - 大卡 -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;grid-column:span 2;">
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:140px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <i data-lucide="bot" style="width:18px;height:18px;color:#2563EB;"></i>
+                <span style="font-size:14px;font-weight:600;">AI 营销日历</span>
+              </div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.5;">对话式生成营销计划，AutoGLM 自动控制手机执行发布、浏览等任务</div>
+            </div>
+            <div style="flex:1;min-width:140px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <i data-lucide="monitor-smartphone" style="width:18px;height:18px;color:#059669;"></i>
+                <span style="font-size:14px;font-weight:600;">实时截屏控制</span>
+              </div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.5;">连续截屏 + 触摸/滑动操作，直接在网页上控制手机</div>
+            </div>
+          </div>
+        </div>
+        <!-- 功能卡片 - 小卡 -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;grid-column:span 1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <i data-lucide="terminal" style="width:18px;height:18px;color:#a29bfe;"></i>
+            <span style="font-size:14px;font-weight:600;">ADB Shell</span>
+          </div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;">内置终端 + 飞书日报通知</div>
         </div>
       </div>
-      <button class="btn btn-primary" style="margin-top: 16px; padding: 12px 32px; font-size: 16px;" onclick="handleConnect()">
-        🔌 连接 Android 设备
-      </button>
     </div>
 
     <!-- 工作区 -->
@@ -1023,6 +1090,9 @@
 
     // 初始化日历
     renderMiniCal();
+
+    // 初始化 Lucide 图标
+    if (window.lucide) lucide.createIcons();
   </script>
 </body>
 </html>
