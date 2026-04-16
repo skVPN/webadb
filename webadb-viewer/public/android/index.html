@@ -184,59 +184,12 @@ client.onLog = (m) => log(m, 'sys');
 (async () => {
   log('正在重新连接设备...', 'sys');
   try {
-    // 用 getDevices 获取已授权设备（不需要用户再次选择）
     const devices = await navigator.usb.getDevices();
     const target = serial ? devices.find(d => d.serialNumber === serial) : devices[0];
     if (!target) throw new Error('未找到已授权设备，请返回首页重新连接');
 
-    // 直接打开设备（跳过 requestDevice）
-    client.transport.device = target;
-    await target.open();
-    if (!target.configuration) await target.selectConfiguration(1);
-
-    // 查找 ADB 接口
-    const config = target.configuration;
-    for (const iface of config.interfaces) {
-      for (const alt of iface.alternates) {
-        if (alt.interfaceClass === 0xFF && alt.interfaceSubclass === 0x42 && alt.interfaceProtocol === 0x01) {
-          client.transport.interfaceNumber = iface.interfaceNumber;
-          for (const ep of alt.endpoints) {
-            if (ep.direction === 'in') client.transport.endpointIn = ep;
-            if (ep.direction === 'out') client.transport.endpointOut = ep;
-          }
-          break;
-        }
-      }
-      if (client.transport.interfaceNumber >= 0) break;
-    }
-    await target.claimInterface(client.transport.interfaceNumber);
-
-    // ADB 握手
-    const { AdbProtocol } = await import('/js/adb-protocol.js');
-    await client.transport.send(AdbProtocol.connect());
-
-    let triedSig = false;
-    for (let i = 0; i < 30; i++) {
-      const msg = await client.transport.receive(30000);
-      if (msg.command === AdbProtocol.COMMANDS.CLSE) continue;
-      if (msg.command === AdbProtocol.COMMANDS.CNXN) {
-        client.connected = true;
-        client.deviceInfo = new TextDecoder().decode(msg.data).replace(/\0/g, '');
-        break;
-      }
-      if (msg.command === AdbProtocol.COMMANDS.AUTH) {
-        if (msg.arg0 === 1 && !triedSig) {
-          triedSig = true;
-          const sig = await client.keyStore.sign(msg.data);
-          await client.transport.send(AdbProtocol.authSignature(new Uint8Array(sig)));
-          continue;
-        }
-        const pk = await client.keyStore.getPublicKeyPayload();
-        await client.transport.send(AdbProtocol.authPublicKey(pk));
-      }
-    }
-
-    if (!client.connected) throw new Error('认证失败');
+    // 用 client.connect 完整走一遍连接+认证流程
+    await client.connect(target);
 
     log('✅ 设备已连接', 'ok');
     document.getElementById('connBadge').innerHTML = '<i data-lucide="wifi" style="width:12px;height:12px"></i> 已连接';
@@ -254,7 +207,7 @@ client.onLog = (m) => log(m, 'sys');
     } catch (_) {}
 
     // Home + 开始连续截屏
-    try { await client.keyEvent(3); } catch (_) {}
+    try { await client.keyEvent(3); log('已按 Home 键', 'sys'); } catch (_) {}
     setTimeout(() => startStream(), 500);
 
   } catch (e) {

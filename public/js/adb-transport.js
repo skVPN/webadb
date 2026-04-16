@@ -24,10 +24,14 @@ export class AdbTransport {
     this.endpointOut = null;
   }
 
-  async open() {
-    this.device = await navigator.usb.requestDevice({
-      filters: [{ classCode: ADB_CLASS, subclassCode: ADB_SUBCLASS, protocolCode: ADB_PROTOCOL }]
-    });
+  async open(existingDevice = null) {
+    if (existingDevice) {
+      this.device = existingDevice;
+    } else {
+      this.device = await navigator.usb.requestDevice({
+        filters: [{ classCode: ADB_CLASS, subclassCode: ADB_SUBCLASS, protocolCode: ADB_PROTOCOL }]
+      });
+    }
 
     await this.device.open();
     console.log('[USB] 设备已打开:', this.device.productName);

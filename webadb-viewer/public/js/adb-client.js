@@ -58,10 +58,10 @@ export class AdbClient {
   /**
    * 连接设备并完成认证
    */
-  async connect() {
+  async connect(existingDevice = null) {
     this.log('步骤1: 打开 USB 设备...');
     try {
-      await this.transport.open();
+      await this.transport.open(existingDevice);
       this.log('USB 设备已打开: ' + this.transport.getDeviceName());
     } catch (e) {
       this.log('❌ USB 设备打开失败: ' + e.message);
