@@ -539,18 +539,18 @@ async function sendChat() {
   appendChat('正在生成营销日历...', 'ai');
 
   try {
+    const today = new Date().toISOString().split('T')[0];
     const prompt = `你是一个营销日历生成助手。用户需求如下：
 "${msg}"
 
-请生成一个营销日历，以 JSON 格式返回，格式如下：
+请根据当前日期生成营销日历，以 JSON 格式返回，格式如下：
 {
   "tasks": [
-    {"date": "2025-07-15", "time": "10:00", "platform": "小红书", "task": "发布蓝牙耳机测评笔记"},
-    {"date": "2025-07-16", "time": "14:00", "platform": "抖音", "task": "浏览竞品视频并点赞评论"}
+    {"date": "YYYY-MM-DD", "time": "HH:MM", "platform": "平台名", "task": "具体任务描述"}
   ]
 }
 
-当前日期: ${new Date().toISOString().split('T')[0]}
+重要：日期必须从当前日期（${today}）开始往后排，不要使用过去的日期。
 只返回 JSON，不要其他文字。`;
 
     const reply = await callLLM([{ role: 'system', content: '你是营销日历生成助手，只返回 JSON 格式数据。' }, { role: 'user', content: prompt }]);

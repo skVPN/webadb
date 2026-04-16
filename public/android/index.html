@@ -395,7 +395,7 @@ window.sendAiChat = async () => {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.llmApiKey },
       body: JSON.stringify({ model: cfg.llmModel, messages: [
         { role: 'system', content: '你是营销日历助手，只返回JSON。' },
-        { role: 'user', content: `需求："${msg}"\n返回：{"tasks":[{"date":"2025-07-15","time":"10:00","platform":"小红书","task":"发布测评"}]}\n当前:${new Date().toISOString().split('T')[0]}` }
+        { role: 'user', content: `需求："${msg}"\n\n请根据当前日期生成营销日历，返回JSON格式：\n{"tasks":[{"date":"YYYY-MM-DD","time":"HH:MM","platform":"平台名","task":"具体任务描述"}]}\n\n注意：日期必须从当前日期开始往后排。当前日期：${new Date().toISOString().split('T')[0]}\n只返回JSON，不要其他文字。` }
       ], temperature: 0.7 })
     });
     if (!res.ok) throw new Error('API ' + res.status);
