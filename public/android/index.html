@@ -277,12 +277,17 @@ async function renderScreen(png) {
 
 // ═══ 触摸/滑动 ═══
 const canvas = document.getElementById('screenCanvas');
-function c2d(e) { const r = canvas.getBoundingClientRect(); return { x: (e.clientX-r.left)*screenW/r.width, y: (e.clientY-r.top)*screenH/r.height }; }
-canvas.addEventListener('mousedown', e => { if (!client.connected) return; dragStart = c2d(e); isDragging = false; });
+function c2d(e) {
+  const r = canvas.getBoundingClientRect();
+  if (!screenW || !screenH || !r.width || !r.height) return null;
+  return { x: (e.clientX-r.left)*screenW/r.width, y: (e.clientY-r.top)*screenH/r.height };
+}
+canvas.addEventListener('mousedown', e => { if (!client.connected) return; const p = c2d(e); if (!p) return; dragStart = p; isDragging = false; });
 canvas.addEventListener('mousemove', () => { if (dragStart) isDragging = true; });
 canvas.addEventListener('mouseup', async e => {
-  if (!client.connected || !dragStart) return;
+  if (!client.connected || !dragStart) { dragStart = null; isDragging = false; return; }
   const end = c2d(e);
+  if (!end) { dragStart = null; isDragging = false; return; }
   const was = streaming;
   try {
     if (was) stopStream();
