@@ -401,7 +401,7 @@
         <div class="screen-header">
           <h3>📺 设备屏幕</h3>
           <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost btn-sm" onclick="captureOnce()">📸 截屏</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadScreenshot()">💾 下载截图</button>
             <button class="btn btn-ghost btn-sm" id="btnStream" onclick="toggleStream()">▶️ 连续</button>
           </div>
         </div>
@@ -419,6 +419,7 @@
           <button class="btn btn-ghost btn-sm" onclick="sendKey(26)" title="Power">⏻</button>
           <button class="btn btn-ghost btn-sm" onclick="sendKey(24)" title="Volume Up">🔊</button>
           <button class="btn btn-ghost btn-sm" onclick="sendKey(25)" title="Volume Down">🔉</button>
+          <button class="btn btn-ghost btn-sm" id="btnBlackScreen" onclick="toggleBlackScreen()" title="物理黑屏（省电+隐私）">🌙 黑屏</button>
           <span class="fps-display" id="fpsDisplay"></span>
         </div>
       </div>
@@ -546,6 +547,8 @@
     window.sendKey = sendKey;
     window.handleCmdKey = handleCmdKey;
     window.clearTerminal = clearTerminal;
+    window.downloadScreenshot = downloadScreenshot;
+    window.toggleBlackScreen = toggleBlackScreen;
 
     // 检查 WebUSB 支持
     if (!navigator.usb) {
@@ -591,6 +594,13 @@
         } catch (e) {
           appendLog('获取设备信息失败: ' + e.message, 'error');
         }
+
+        // 自动按 Home 键回到桌面，然后开启连续截屏
+        try {
+          await client.keyEvent(3);
+          appendLog('已按 Home 键回到桌面', 'system');
+        } catch (_) {}
+        setTimeout(() => { if (!streaming) startStream(); }, 500);
       } catch (e) {
         appendLog('❌ 连接失败: ' + e.message, 'error');
         if (e.message.includes('kill-server') || e.message.includes('超时') || e.message.includes('占用')) {
@@ -825,6 +835,62 @@
       line.textContent = text;
       output.appendChild(line);
       output.scrollTop = output.scrollHeight;
+    }
+
+    /**
+     * 下载当前截图
+     */
+    async function downloadScreenshot() {
+      if (!client.connected) return;
+      try {
+        appendLog('正在截图下载...', 'system');
+        const data = await client.screencap();
+        const blob = new Blob([data], { type: 'image/png' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `screenshot_${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        appendLog('截图已下载', 'success');
+      } catch (e) {
+        appendLog('截图下载失败: ' + e.message, 'error');
+      }
+    }
+
+    /**
+     * 物理黑屏：关闭手机屏幕但保持 ADB 连接
+     * 页面上仍可通过截屏看到内容并操作
+     */
+    let isBlackScreen = false;
+    async function toggleBlackScreen() {
+      if (!client.connected) return;
+      const btn = document.getElementById('btnBlackScreen');
+      try {
+        if (!isBlackScreen) {
+          // 关闭物理屏幕：设置亮度为0 + 关闭屏幕
+          await client.shellText('settings put system screen_brightness 0');
+          await client.shellText('settings put system screen_brightness_mode 0');
+          // 使用 input keyevent KEYCODE_POWER 模拟按电源键关屏
+          // 但这会锁屏，改用设置亮度为最低
+          isBlackScreen = true;
+          btn.textContent = '☀️ 亮屏';
+          btn.style.background = 'var(--warning)';
+          btn.style.color = '#000';
+          appendLog('物理黑屏已开启（亮度设为0，省电+隐私）', 'system');
+        } else {
+          // 恢复亮度
+          await client.shellText('settings put system screen_brightness_mode 1');
+          await client.shellText('settings put system screen_brightness 128');
+          isBlackScreen = false;
+          btn.textContent = '🌙 黑屏';
+          btn.style.background = '';
+          btn.style.color = '';
+          appendLog('物理屏幕已恢复', 'system');
+        }
+      } catch (e) {
+        appendLog('黑屏切换失败: ' + e.message, 'error');
+      }
     }
 
     function clearTerminal() {
