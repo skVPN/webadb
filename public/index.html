@@ -283,6 +283,7 @@ window.handleConnect = async function() {
   }
 };
 lucide.createIcons();
+navigator.sendBeacon?.('/api/track?p=' + encodeURIComponent(location.pathname));
 </script>
 </body>
 </html>

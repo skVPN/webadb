@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>访问统计 - WebADB</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif;background:#0f1117;color:#e4e6ed;min-height:100vh;padding:24px}
+h1{font-size:24px;font-weight:700;margin-bottom:24px}
+h1 span{color:#2563EB}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px}
+.card{background:#1a1d27;border:1px solid #2e3345;border-radius:12px;padding:20px}
+.card h3{font-size:14px;color:#8b8fa3;margin-bottom:12px;font-weight:500}
+.big{font-size:36px;font-weight:800;color:#2563EB}
+.bar-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px}
+.bar-label{width:80px;text-align:right;color:#8b8fa3;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-fill{height:20px;background:#2563EB;border-radius:4px;min-width:2px;transition:width .3s}
+.bar-val{color:#8b8fa3;font-size:12px;min-width:40px}
+.chart{height:200px;display:flex;align-items:flex-end;gap:4px;padding-top:20px}
+.chart-bar{flex:1;background:#2563EB;border-radius:4px 4px 0 0;min-height:2px;position:relative;transition:height .3s}
+.chart-bar:hover{background:#3b82f6}
+.chart-bar .tip{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-size:10px;color:#8b8fa3;white-space:nowrap;display:none}
+.chart-bar:hover .tip{display:block}
+.chart-labels{display:flex;gap:4px;margin-top:4px}
+.chart-labels span{flex:1;text-align:center;font-size:10px;color:#8b8fa3}
+.nav{margin-bottom:16px;display:flex;gap:12px;align-items:center}
+.nav a{color:#8b8fa3;text-decoration:none;font-size:13px}
+.nav a:hover{color:#2563EB}
+select{background:#242836;border:1px solid #2e3345;color:#e4e6ed;padding:6px 12px;border-radius:6px;font-size:13px}
+.loading{color:#8b8fa3;font-size:14px;padding:40px;text-align:center}
+</style>
+</head>
+<body>
+<div class="nav">
+  <a href="/">← 返回首页</a>
+  <select id="daysPicker" onchange="loadStats()">
+    <option value="7">最近 7 天</option>
+    <option value="14">最近 14 天</option>
+    <option value="30">最近 30 天</option>
+  </select>
+</div>
+<h1>📊 <span>WebADB</span> 访问统计</h1>
+<div id="content"><div class="loading">加载中...</div></div>
+<script>
+async function loadStats() {
+  var days = document.getElementById('daysPicker').value;
+  var el = document.getElementById('content');
+  try {
+    var res = await fetch('/api/stats?days=' + days);
+    var d = await res.json();
+    if (d.error) { el.innerHTML = '<div class="loading">错误: ' + d.error + '<br>请先访问 <a href="/api/init" style="color:#2563EB">/api/init</a> 初始化数据库</div>'; return; }
+
+    var maxDaily = Math.max.apply(null, (d.daily||[]).map(function(r){return r.cnt}).concat([1]));
+    var maxCountry = Math.max.apply(null, (d.countries||[]).map(function(r){return r.cnt}).concat([1]));
+    var maxDevice = Math.max.apply(null, (d.devices||[]).map(function(r){return r.cnt}).concat([1]));
+    var maxPath = Math.max.apply(null, (d.paths||[]).map(function(r){return r.cnt}).concat([1]));
+
+    var html = '<div class="grid">';
+    html += '<div class="card"><h3>总访问量 (PV)</h3><div class="big">' + (d.total ? d.total.cnt : 0) + '</div></div>';
+    html += '<div class="card"><h3>独立访客 (UV)</h3><div class="big">' + (d.total ? d.total.uv : 0) + '</div></div>';
+    html += '</div>';
+
+    html += '<div class="card" style="margin-bottom:16px"><h3>每日访问趋势</h3><div class="chart">';
+    (d.daily||[]).forEach(function(r) {
+      html += '<div class="chart-bar" style="height:' + (r.cnt/maxDaily*100) + '%"><span class="tip">' + r.day.slice(5) + ' : ' + r.cnt + '</span></div>';
+    });
+    html += '</div><div class="chart-labels">';
+    (d.daily||[]).forEach(function(r) { html += '<span>' + r.day.slice(5) + '</span>'; });
+    html += '</div></div>';
+
+    html += '<div class="grid">';
+    html += '<div class="card"><h3>地区分布 TOP 20</h3>';
+    (d.countries||[]).forEach(function(r) {
+      html += '<div class="bar-row"><span class="bar-label">' + r.country + '</span><div class="bar-fill" style="width:' + (r.cnt/maxCountry*100) + '%"></div><span class="bar-val">' + r.cnt + '</span></div>';
+    });
+    html += '</div>';
+
+    html += '<div class="card"><h3>设备类型</h3>';
+    (d.devices||[]).forEach(function(r) {
+      html += '<div class="bar-row"><span class="bar-label">' + r.device + '</span><div class="bar-fill" style="width:' + (r.cnt/maxDevice*100) + '%"></div><span class="bar-val">' + r.cnt + '</span></div>';
+    });
+    html += '</div>';
+
+    html += '<div class="card"><h3>页面访问 TOP 10</h3>';
+    (d.paths||[]).forEach(function(r) {
+      html += '<div class="bar-row"><span class="bar-label" title="' + r.path + '">' + r.path + '</span><div class="bar-fill" style="width:' + (r.cnt/maxPath*100) + '%"></div><span class="bar-val">' + r.cnt + '</span></div>';
+    });
+    html += '</div></div>';
+
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<div class="loading">加载失败: ' + e.message + '</div>'; }
+}
+loadStats();
+</script>
+</body>
+</html>

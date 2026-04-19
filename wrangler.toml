@@ -1,5 +1,12 @@
 name = "webadb-viewer"
 compatibility_date = "2025-04-15"
+main = "src/worker.js"
 
 [assets]
 directory = "./public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "webadb-analytics"
+database_id = "98fa715c-e295-4953-9a11-2421aa68f9f9"
