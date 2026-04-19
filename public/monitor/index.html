@@ -83,6 +83,13 @@ async function loadStats() {
     });
     html += '</div>';
 
+    var maxBrowser = Math.max.apply(null, (d.browsers||[]).map(function(r){return r.cnt}).concat([1]));
+    html += '<div class="card"><h3>浏览器 / UA</h3>';
+    (d.browsers||[]).forEach(function(r) {
+      html += '<div class="bar-row"><span class="bar-label">' + r.browser + '</span><div class="bar-fill" style="width:' + (r.cnt/maxBrowser*100) + '%"></div><span class="bar-val">' + r.cnt + '</span></div>';
+    });
+    html += '</div>';
+
     html += '<div class="card"><h3>页面访问 TOP 10</h3>';
     (d.paths||[]).forEach(function(r) {
       html += '<div class="bar-row"><span class="bar-label" title="' + r.path + '">' + r.path + '</span><div class="bar-fill" style="width:' + (r.cnt/maxPath*100) + '%"></div><span class="bar-val">' + r.cnt + '</span></div>';

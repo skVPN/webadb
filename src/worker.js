@@ -63,6 +63,7 @@ export default {
           env.DB.prepare("SELECT CASE WHEN ua LIKE '%Mobile%' THEN 'Mobile' WHEN ua LIKE '%Tablet%' THEN 'Tablet' ELSE 'Desktop' END as device, COUNT(*) as cnt FROM visits WHERE ts >= ? GROUP BY device ORDER BY cnt DESC").bind(since).all(),
           env.DB.prepare("SELECT path, COUNT(*) as cnt FROM visits WHERE ts >= ? GROUP BY path ORDER BY cnt DESC LIMIT 10").bind(since).all(),
           env.DB.prepare("SELECT COUNT(*) as cnt, COUNT(DISTINCT ip) as uv FROM visits WHERE ts >= ?").bind(since).all(),
+          env.DB.prepare("SELECT CASE WHEN ua LIKE '%Edg/%' THEN 'Edge' WHEN ua LIKE '%Chrome/%' AND ua NOT LIKE '%Edg/%' THEN 'Chrome' WHEN ua LIKE '%Firefox/%' THEN 'Firefox' WHEN ua LIKE '%Safari/%' AND ua NOT LIKE '%Chrome/%' THEN 'Safari' WHEN ua LIKE '%bot%' OR ua LIKE '%Bot%' OR ua LIKE '%spider%' THEN 'Bot' ELSE 'Other' END as browser, COUNT(*) as cnt FROM visits WHERE ts >= ? GROUP BY browser ORDER BY cnt DESC").bind(since).all(),
         ]);
 
         return Response.json({
@@ -70,7 +71,8 @@ export default {
           countries: results[1].results,
           devices: results[2].results,
           paths: results[3].results,
-          total: results[4].results[0]
+          total: results[4].results[0],
+          browsers: results[5].results
         }, { headers: { 'access-control-allow-origin': '*' } });
       } catch (e) {
         return Response.json({ error: e.message }, { status: 500 });
