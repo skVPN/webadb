@@ -68,9 +68,25 @@ a:hover{text-decoration:underline}
   <p>WebADB Viewer 由Tec-Do开发维护，致力于为开发者提供便捷的 Android 调试工具。</p>
 </div>
 
-<div class="container">
+  <!-- PM Skills -->
+  <div class="card" onclick="document.getElementById('pmModal').style.display='flex'" style="cursor:pointer;border-color:var(--accent);transition:all .2s">
+    <h3>🎯 PM Skills 评估工具</h3>
+    <p style="color:var(--text2);font-size:14px;line-height:1.8;">完整的产品经理技能评估框架，涵盖 A/B 测试分析、用户画像、竞品分析等 50+ 专业技能模板。<br><strong style="color:var(--accent2)">点击获取 →</strong></p>
+  </div>
 
-  <!-- Employed at信息 -->
+  <!-- PM Modal -->
+  <div id="pmModal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.7);align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:400px;width:90%;padding:32px;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">📱</div>
+      <h3 style="font-size:18px;margin-bottom:12px">关注公众号获取</h3>
+      <p style="color:var(--text2);font-size:14px;margin-bottom:16px">关注微信公众号「<strong style="color:var(--text)">codgank</strong>」<br>回复 <strong style="color:var(--accent2)">"PM"</strong> 即可免费获取完整评估文档</p>
+      <img src="/my-link-qr.png" alt="微信二维码" style="width:160px;height:160px;border-radius:12px;border:2px solid var(--border);margin-bottom:16px">
+      <br>
+      <button onclick="this.closest('[id]').style.display='none'" style="padding:8px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px">知道了</button>
+    </div>
+  </div>
+
+  <!-- 公司信息 -->
   <div class="card">
     <h3>🏢 Tec-Do</h3>
     <p style="color:var(--text2);font-size:14px;line-height:1.8;">我们专注于移动互联网技术，WebADB Viewer 是我们的开源项目之一 — 让开发者无需安装任何软件，直接在浏览器中通过 WebUSB + ADB 协议连接和控制 Android 设备。</p>

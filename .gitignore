@@ -2,3 +2,4 @@ node_modules/
 .wrangler/
 webadb-viewer/node_modules/
 certs/
+docs/pm-skills-evaluation.md
